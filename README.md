@@ -19,6 +19,11 @@ scripts/fetch_models.py   GETs /api/models/<repo> + raw README.md for each model
 scripts/build_site.py     embeds that JSON into index.template.html -> index.html
 ```
 
+`index.html` and `data/models.json` are **build outputs and are gitignored.** Only
+`index.template.html` and the scripts are committed; CI regenerates the page on every
+deploy. Committing the built file makes the branch and the workflow race over what
+Pages serves, and the stale copy wins.
+
 `index.html` is fully self-contained: inline CSS, embedded SVG, no CDN, no fonts, no
 external JS. It opens correctly from `file://` with the snapshot baked in, and when
 served over HTTP it quietly re-checks download/like counts against the Hub.
@@ -33,10 +38,16 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 ## Deploying to GitHub Pages
 
-1. Push this directory to a repository.
-2. **Settings → Pages → Source** → *GitHub Actions*.
-3. The workflow at `.github/workflows/pages.yml` fetches fresh data, builds, and
-   publishes on every push to `main` (plus a weekly Monday refresh).
+Already configured for this repo: **Settings → Pages → Source** is set to *GitHub
+Actions*. Pushing to `main` triggers `.github/workflows/pages.yml`, which fetches fresh
+Hub data, rebuilds, and publishes. There is also a weekly Monday refresh.
+
+Because the page is built by CI, `index.html` does not exist in the repository — only
+in the published site and in your local build.
+
+> Note: pushing `.github/workflows/*` requires a token with the `workflow` scope.
+> `gh auth login --web --scopes workflow` requests it; the default `gh auth login`
+> does not.
 
 ## Notes
 
