@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Shelf — GLM-5.3 &amp; TRELLIS.2</title>
+<meta name="description" content="A live card for three open-weights models: zai-org/GLM-5.3, microsoft/TRELLIS.2-4B and microsoft/TRELLIS-text-xlarge.">
+<style>
+  :root{
+    --bg:#0a0c12; --panel:#11151f; --panel2:#161b28; --line:#232a3b;
+    --ink:#e8ecf5; --muted:#94a0b8; --dim:#6b7690;
+    --blue:#5b8cff; --green:#37d0a0; --amber:#f0a44a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre,.mono{font-family:var(--mono)}
+
+  /* ---- header ---- */
+  header{
+    position:sticky;top:0;z-index:50;background:rgba(10,12,18,.86);
+    backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex;align-items:center;gap:18px;height:58px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:-.2px}
+  .brand svg{width:22px;height:22px}
+  .nav nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
+  .nav nav a{color:var(--muted)}
+  .nav nav a:hover{color:var(--ink);text-decoration:none}
+
+  /* ---- hero ---- */
+  .hero{padding:72px 0 46px;position:relative;overflow:hidden}
+  .hero::before{
+    content:"";position:absolute;inset:-40% -10% auto -10%;height:520px;
+    background:radial-gradient(60% 60% at 30% 40%,rgba(91,140,255,.16),transparent 70%),
+               radial-gradient(50% 50% at 75% 30%,rgba(55,208,160,.13),transparent 70%);
+    pointer-events:none;
+  }
+  .hero h1{font-size:clamp(34px,6vw,58px);line-height:1.06;margin:0 0 16px;letter-spacing:-1.4px;font-weight:700}
+  .hero p.lede{font-size:18px;color:var(--muted);max-width:62ch;margin:0 0 26px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);
+    border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 11px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 9px var(--green)}
+  .dot.off{background:var(--dim);box-shadow:none}
+
+  /* ---- grid + cards ---- */
+  section{padding:52px 0;border-top:1px solid var(--line)}
+  h2{font-size:26px;letter-spacing:-.6px;margin:0 0 6px}
+  .sub{color:var(--dim);font-size:14.5px;margin:0 0 28px}
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;
+    position:relative;overflow:hidden;transition:border-color .18s,transform .18s;
+  }
+  .card:hover{border-color:#33405c;transform:translateY(-2px)}
+  .card::after{content:"";position:absolute;left:0;top:0;height:3px;width:100%;background:var(--accent)}
+  .card h3{margin:0 0 4px;font-size:19px;font-family:var(--mono);letter-spacing:-.3px}
+  .card .role{font-size:12.5px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+  .card p{color:var(--muted);font-size:14.5px;margin:12px 0 16px}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .stat{background:var(--panel2);padding:10px 12px}
+  .stat b{display:block;font-size:17px;font-family:var(--mono);letter-spacing:-.4px}
+  .stat span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .tag{font-size:11px;font-family:var(--mono);color:var(--dim);border:1px solid var(--line);
+    border-radius:5px;padding:2px 6px}
+  .card .btn{
+    display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+    padding:8px 13px;border-radius:9px;
+  }
+  .card .btn:hover{border-color:var(--accent);text-decoration:none}
+
+  /* ---- tables ---- */
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+  th,td{padding:9px 13px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);font-family:var(--mono)}
+  thead th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.6px}
+  tbody tr:last-child td{border-bottom:none}
+  td.hi{color:var(--green);font-weight:700}
+  td.best{color:var(--amber);font-weight:700}
+  .legend{font-size:12.5px;color:var(--dim);margin-top:10px}
+
+  /* ---- model card reader ---- */
+  .reader{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .reader button{
+    font:600 13px var(--mono);color:var(--muted);background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer;
+  }
+  .reader button[aria-selected="true"]{color:var(--ink);border-color:var(--blue);background:var(--panel2)}
+  .md{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;font-size:15px}
+  .md h1{font-size:26px;margin:0 0 12px;letter-spacing:-.6px}
+  .md h2{font-size:20px;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .md h3{font-size:16.5px;margin:24px 0 8px}
+  .md p{margin:10px 0}
+  .md ul,.md ol{padding-left:22px;margin:10px 0}
+  .md li{margin:5px 0;color:#cdd5e4}
+  .md code{background:#0d1119;border:1px solid var(--line);border-radius:5px;padding:1.5px 5px;font-size:12.5px;color:#a8d8ff}
+  .md pre{background:#0d1119;border:1px solid var(--line);border-radius:10px;padding:15px;overflow-x:auto;margin:14px 0}
+  .md pre code{background:none;border:none;padding:0;color:#c9d6ee;font-size:12.5px;line-height:1.55}
+  .md table{min-width:0}
+  .md a{word-break:break-all}
+  .md blockquote{margin:12px 0;padding:2px 0 2px 14px;border-left:3px solid var(--line);color:var(--muted)}
+  .md img{max-width:100%;border-radius:10px}
+
+  .snip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden}
+  .snip .bar{display:flex;align-items:center;gap:9px;padding:10px 15px;border-bottom:1px solid var(--line);
+    background:var(--panel2);font:600 12.5px var(--mono);color:var(--muted)}
+  .snip pre{margin:0;padding:18px;overflow-x:auto;font-size:12.8px;line-height:1.6;color:#c9d6ee}
+
+  footer{border-top:1px solid var(--line);padding:34px 0 60px;color:var(--dim);font-size:13.5px}
+  footer .row{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
+  @media(max-width:640px){.nav nav{display:none}.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <span class="brand">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke="#5b8cff" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M3 7.5 12 12l9-4.5M12 12v9" stroke="#37d0a0" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      Model Shelf
+    </span>
+    <nav>
+      <a href="#models">Models</a>
+      <a href="#bench">Benchmarks</a>
+      <a href="#cards">Model cards</a>
+      <a href="#usage">Usage</a>
+      <a href="#about">About</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>Three open-weights models,<br>one live card.</h1>
+    <p class="lede">
+      Pulled straight from the Hugging Face Hub. Two are text, one makes geometry:
+      an agentic coding model, and a pair of 3D generators that turn a picture or a
+      sentence into a textured mesh.
+    </p>
+    <div class="pillrow" id="statusRow">
+      <span class="pill"><span class="dot" id="statusDot"></span><span id="statusText">loading…</span></span>
+      <span class="pill mono" id="genAt"></span>
+      <span class="pill">public API · read-only · no key required</span>
+    </div>
+  </div>
+</div>
+
+<section id="models">
+  <div class="wrap">
+    <h2>The models</h2>
+    <p class="sub">Downloads, likes and parameter counts come from the Hub API at build time.</p>
+    <div class="grid" id="grid"></div>
+  </div>
+</section>
+
+<section id="bench">
+  <div class="wrap">
+    <h2>GLM-5.3 against the field</h2>
+    <p class="sub">
+      As reported by Z.ai on the GLM-5.3 model card. Green is GLM-5.3's own best,
+      amber is the best score in the row overall.
+    </p>
+    <div class="tblwrap">
+      <table id="benchTable">
+        <thead>
+          <tr>
+            <th>Benchmark</th><th>GLM-5.3</th><th>GLM-5.2</th><th>Kimi K3</th>
+            <th>DeepSeek-V4 Pro</th><th>Qwen3.8-Max</th><th>Opus 4.8</th>
+            <th>Fable 5</th><th>GPT-5.6 Sol</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="legend">
+      “–” means the vendor did not report a number. Fable 5 is shown with fallback.
+      ExploitGym is reported as a 2&nbsp;h&nbsp;/&nbsp;6&nbsp;h pair under separate timeout budgets.
+    </p>
+  </div>
+</section>
+
+<section id="speed">
+  <div class="wrap">
+    <h2>TRELLIS.2 inference cost</h2>
+    <p class="sub">Single asset, one NVIDIA H100, as published on the TRELLIS.2-4B card.</p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Voxel resolution</th><th>Wall-clock</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>512³</td><td class="hi">~3 s</td><td style="text-align:right;color:var(--muted)">fastest tier</td></tr>
+          <tr><td>1024³</td><td class="hi">~17 s</td><td style="text-align:right;color:var(--muted)">~9.6K latent tokens</td></tr>
+          <tr><td>1536³</td><td class="best">~60 s</td><td style="text-align:right;color:var(--muted)">full fidelity</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend">
+      The sparse 3D VAE downsamples 16× spatially, so a 1024³ asset compresses to roughly
+      9,600 latent tokens. Needs Linux and a 24&nbsp;GB+ NVIDIA GPU (verified on A100 / H100),
+      CUDA 12.4 recommended.
+    </p>
+  </div>
+</section>
+
+<section id="cards">
+  <div class="wrap">
+    <h2>Model cards</h2>
+    <p class="sub">The upstream READMEs, rendered verbatim from the Hub.</p>
+    <div class="reader" id="reader" role="tablist"></div>
+    <div class="md" id="cardBody"></div>
+  </div>
+</section>
+
+<section id="usage">
+  <div class="wrap">
+    <h2>Rebuilding this page</h2>
+    <p class="sub">One script refetches everything. No token, no account, nothing gated.</p>
+    <div class="snip">
+      <div class="bar">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m8 6-6 6 6 6M16 6l6 6-6 6" stroke="#6b7690" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        scripts/fetch_models.py
+      </div>
+<pre><code>python3 scripts/fetch_models.py --out data/models.json
+
+# GET https://huggingface.co/api/models/&lt;owner&gt;/&lt;name&gt;
+# GET https://huggingface.co/&lt;owner&gt;/&lt;name&gt;/raw/main/README.md
+#
+# Both endpoints are public. The fetcher needs no HF_TOKEN and writes
+# data/models.json, which index.html embeds at build time.</code></pre>
+    </div>
+    <p class="legend">
+      The GitHub Action in <code>.github/workflows/pages.yml</code> runs that same script on
+      every push, so the numbers on this page stay current without anyone touching it.
+    </p>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <h2>About</h2>
+    <p class="sub">
+      This site is a thin, honest wrapper. Nothing here is a mirror and nothing is
+      redistributed — every figure links back to its model card on the Hub.
+      GLM-5.3 is released by Z.ai under a custom licence; both TRELLIS checkpoints are MIT.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span>Built for three models. Data © their respective authors.</span>
+    <span class="mono" id="footRev"></span>
+  </div>
+</footer>
+
+<script id="model-data" type="application/json">__MODELS_JSON__</script>
+<script>
+(function(){
+  "use strict";
+
+  var BENCH = [
+    ["Terminal Bench 2.1","88.2","81.0","88.3","87.9","86.6","85.0","88.0","88.8"],
+    ["Terminal Bench 3.0","28.3","4.6","17.4","–","–","21.1","33.7","34.6"],
+    ["DeepSWE (v1.1)","66.9","46.2","67.5","62.7","56.6","58.0","69.7","72.7"],
+    ["NL2Repo","58.0","48.9","58.0","61.1","55.9","69.7","–","–"],
+    ["ProgramBench (Almost Solved)","19.0","9.5","17.5","–","10.5","15.5","33.0","23.0"],
+    ["FrontierSWE","78.1","67.5","–","–","–","66.5","88.2","–"],
+    ["SWE-Marathon (v1.1)","42.5","19.4","48.1","–","–","48.8","33.1","42.5"],
+    ["PostTrainBench","39.8","31.7","32.0","–","–","32.9","41.8","36.2"],
+    ["CyberGym","84.5","77.2","80.0","83.3","78.5","78.1","83.8","83.6"],
+    ["ExploitGym (2h / 6h)","105 / 130","29 / 39","36 / 70","–","14 / 26","80 / 120","181 / 247","216 / 293"],
+    ["ExploitBench","54.4","24.4","32.2","–","28.8","40.0","78.0","76.5"],
+    ["Toolathlon Verified","73.0","59.9","76.5","74.1","72.5","76.2","74.7","74.9"],
+    ["AutomationBench (v1.0.6)","48.2","26.2","46.7","43.2","39.8","41.0","46.2","45.8"],
+    ["Agents' Last Exam (ALE-CLI)","28.5","23.8","27.6","25.7","27.0","25.7","23.8","28.6"],
+    ["HLE w/ Tools","62.5","54.7","59.8","60.0","56.2","57.9","63.9","64.5"],
+    ["GDPval-AA v2","1769","1508","1682","1590","1739","1588","1743","1730"]
+  ];
+
+  function fmt(n){ if(n==null) return "—"; return n.toLocaleString("en-US"); }
+  function params(n){
+    if(n==null) return "—";
+    if(n>=1e9) return (n/1e9).toFixed(n>=1e10?0:1).replace(/\.0$/,"")+"B";
+    if(n>=1e6) return (n/1e6).toFixed(0)+"M";
+    return fmt(n);
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+  /* ---------- minimal markdown renderer (headings, lists, tables, code, links) ---------- */
+  function inline(s){
+    s = esc(s);
+    s = s.replace(/`([^`]+)`/g,"<code>$1</code>");
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,'<img alt="$1" src="$2" loading="lazy">');
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<em>$2</em>");
+    return s;
+  }
+  function md(src){
+    var lines = String(src||"").replace(/\r\n/g,"\n").split("\n"), out = [], i = 0;
+    function isRow(l){ return /^\s*\|.*\|\s*$/.test(l); }
+    function isSep(l){ return /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(l) && /-/.test(l); }
+    function cells(l){ return l.trim().replace(/^\||\|$/g,"").split("|").map(function(c){return c.trim();}); }
+
+    while(i < lines.length){
+      var line = lines[i];
+      if(/^\s*$/.test(line)){ i++; continue; }
+      var m = /^(#{1,6})\s+(.*)$/.exec(line);
+      if(m){ var lv = m[1].length; out.push("<h"+lv+">"+inline(m[2])+"</h"+lv+">"); i++; continue; }
+      if(/^\s*```/.test(line)){
+        var lang = line.trim().slice(3).trim(), buf = []; i++;
+        while(i < lines.length && !/^\s*```/.test(lines[i])){ buf.push(lines[i]); i++; }
+        i++;
+        out.push("<pre><code"+(lang?' class="lang-'+esc(lang)+'"':"")+">"+esc(buf.join("\n"))+"</code></pre>");
+        continue;
+      }
+      if(isRow(line) && i+1 < lines.length && isSep(lines[i+1])){
+        var head = cells(line); i += 2; var rows = [];
+        while(i < lines.length && isRow(lines[i])){ rows.push(cells(lines[i])); i++; }
+        var t = "<table><thead><tr>";
+        head.forEach(function(h){ t += "<th>"+inline(h)+"</th>"; });
+        t += "</tr></thead><tbody>";
+        rows.forEach(function(r){
+          t += "<tr>";
+          for(var k=0;k<head.length;k++){ t += "<td>"+inline(r[k]||"")+"</td>"; }
+          t += "</tr>";
+        });
+        out.push(t+"</tbody></table>");
+        continue;
+      }
+      if(/^\s*>/.test(line)){
+        var q = [];
+        while(i < lines.length && /^\s*>/.test(lines[i])){ q.push(lines[i].replace(/^\s*>\s?/,"")); i++; }
+        out.push("<blockquote>"+inline(q.join(" "))+"</blockquote>");
+        continue;
+      }
+      var listM = /^(\s*)([-*+]|\d+\.)\s+(.*)$/.exec(line);
+      if(listM){
+        var ordered = /\d/.test(listM[2]), tag = ordered ? "ol" : "ul", items = [];
+        while(i < lines.length){
+          var lm = /^(\s*)([-*+]|\d+\.)\s+(.*)$/.exec(lines[i]);
+          if(!lm) break;
+          items.push("<li>"+inline(lm[3])+"</li>"); i++;
+        }
+        out.push("<"+tag+">"+items.join("")+"</"+tag+">");
+        continue;
+      }
+      var para = [];
+      while(i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6}\s|```|\s*>|\s*([-*+]|\d+\.)\s)/.test(lines[i])
+            && !(isRow(lines[i]) && i+1 < lines.length && isSep(lines[i+1]))){
+        para.push(lines[i]); i++;
+      }
+      if(para.length) out.push("<p>"+inline(para.join(" "))+"</p>");
+      else i++;
+    }
+    return out.join("\n");
+  }
+
+  /* ---------- benchmark table ---------- */
+  function renderBench(){
+    var tb = document.querySelector("#benchTable tbody");
+    BENCH.forEach(function(row){
+      var nums = row.slice(1).map(function(v){
+        var n = parseFloat(String(v).split("/")[0].replace(/[^\d.]/g,""));
+        return isNaN(n) ? null : n;
+      });
+      var best = Math.max.apply(null, nums.filter(function(n){return n!==null;}));
+      var tr = "<tr><td>"+esc(row[0])+"</td>";
+      row.slice(1).forEach(function(v,k){
+        var n = nums[k];
+        var cls = (n!==null && n===best && k>0) ? "best" : (k===0 ? "hi" : "");
+        tr += '<td class="'+cls+'">'+esc(v)+"</td>";
+      });
+      tb.insertAdjacentHTML("beforeend", tr+"</tr>");
+    });
+  }
+
+  /* ---------- model cards ---------- */
+  function renderCards(models){
+    var tabs = document.getElementById("reader");
+    var body = document.getElementById("cardBody");
+    tabs.innerHTML = "";
+    models.forEach(function(m,idx){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role","tab");
+      b.setAttribute("aria-selected", idx===0 ? "true" : "false");
+      b.textContent = m.repo;
+      b.onclick = function(){
+        Array.prototype.forEach.call(tabs.children,function(c){ c.setAttribute("aria-selected","false"); });
+        b.setAttribute("aria-selected","true");
+        body.innerHTML = m.readme ? md(m.readme)
+          : "<p>Model card unavailable (HTTP "+m.http_status+"). "+
+            '<a href="'+m.url+'" target="_blank" rel="noopener noreferrer">Open on the Hub</a>.</p>';
+      };
+      tabs.appendChild(b);
+    });
+    if(models.length) tabs.children[0].click();
+  }
+
+  /* ---------- cards ---------- */
+  function renderGrid(models){
+    var g = document.getElementById("grid");
+    models.forEach(function(m){
+      var el = document.createElement("article");
+      el.className = "card";
+      el.style.setProperty("--accent", m.accent || "#5b8cff");
+      var tags = (m.tags||[]).slice(0,8).map(function(t){ return '<span class="tag">'+esc(t)+"</span>"; }).join("");
+      el.innerHTML =
+        '<div class="role">'+esc(m.role)+'</div>'+
+        "<h3>"+esc(m.repo)+'</h3>'+
+        "<p>"+esc(m.blurb)+'</p>'+
+        '<div class="stats">'+
+          '<div class="stat"><b>'+params(m.params)+'</b><span>parameters</span></div>'+
+          '<div class="stat"><b>'+fmt(m.downloads)+'</b><span>downloads / mo</span></div>'+
+          '<div class="stat"><b>'+fmt(m.likes)+'</b><span>likes</span></div>'+
+          '<div class="stat"><b>'+esc(m.pipeline_tag||"—")+'</b><span>task</span></div>'+
+        '</div>'+
+        '<div class="tags">'+tags+'</div>'+
+        '<a class="btn" href="'+m.url+'" target="_blank" rel="noopener noreferrer">'+
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">'+
+          '<path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+          '</svg>View on the Hub</a>';
+      g.appendChild(el);
+    });
+  }
+
+  /* ---------- boot ---------- */
+  var data = JSON.parse(document.getElementById("model-data").textContent);
+  var models = data.models || [];
+
+  renderGrid(models);
+  renderBench();
+  renderCards(models);
+
+  var allOk = models.every(function(m){ return m.ok; });
+  document.getElementById("statusDot").className = "dot" + (allOk ? "" : " off");
+  document.getElementById("statusText").textContent = allOk
+    ? "all " + models.length + " models fetched from the Hub"
+    : "partial fetch — see cards below";
+  document.getElementById("genAt").textContent = "built " + (data.generated_at || "unknown");
+  document.getElementById("footRev").textContent =
+    models.map(function(m){ return m.repo.split("/")[1] + "@" + String(m.revision||"").slice(0,7); }).join("  ·  ");
+
+  /* Live refresh when the page is served over http(s) — the Hub API allows CORS.
+     Under file:// this silently keeps the baked-in snapshot instead. */
+  if(location.protocol === "http:" || location.protocol === "https:"){
+    Promise.all(models.map(function(m){
+      return fetch("https://huggingface.co/api/models/" + m.repo)
+        .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    })).then(function(live){
+      var changed = 0;
+      live.forEach(function(j,k){
+        if(j && models[k] && (j.downloads !== models[k].downloads || j.likes !== models[k].likes)){
+          models[k].downloads = j.downloads; models[k].likes = j.likes;
+          models[k].last_modified = j.lastModified; changed++;
+        }
+      });
+      if(changed){
+        document.getElementById("grid").innerHTML = "";
+        renderGrid(models);
+        document.getElementById("statusText").textContent =
+          "live — " + changed + " model" + (changed>1?"s":"") + " refreshed just now";
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
