@@ -74,6 +74,19 @@ assert.ok(registry["benchTableTbody"].innerHTML.includes('class="hi"'), "no GLM 
 
 assert.equal(registry["reader"].children.length, 3, "expected 3 model-card tabs");
 assert.equal(registry["reader"].children[0].getAttribute("aria-selected"), "true", "first tab not selected");
+
+const tryGrid = registry["tryGrid"];
+assert.equal(tryGrid.children.length, 3, `expected 3 free-access cards, got ${tryGrid.children.length}`);
+const tryHtml = tryGrid.children.map((c) => c.innerHTML).join("\n");
+for (const href of [
+  "https://huggingface.co/spaces/microsoft/TRELLIS.2",
+  "https://z.ai",
+  "https://openrouter.ai/z-ai/glm-5.2:free",
+]) {
+  assert.ok(tryHtml.includes(href), `free-access card missing ${href}`);
+}
+assert.ok(tryHtml.includes("50 req/day"), "free tier limits not disclosed on the card");
+assert.ok(tryHtml.includes("GLM-5.3-Flash"), "z.ai entry does not name the model actually served");
 const card = registry["cardBody"].innerHTML;
 assert.ok(card.includes("<table>"), "model card markdown table did not render");
 assert.ok(card.includes("<pre><code"), "model card code fence did not render");

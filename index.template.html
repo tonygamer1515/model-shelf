@@ -141,6 +141,7 @@
     <nav>
       <a href="#models">Models</a>
       <a href="#bench">Benchmarks</a>
+      <a href="#try">Try them</a>
       <a href="#cards">Model cards</a>
       <a href="#usage">Usage</a>
       <a href="#about">About</a>
@@ -216,6 +217,44 @@
       The sparse 3D VAE downsamples 16× spatially, so a 1024³ asset compresses to roughly
       9,600 latent tokens. Needs Linux and a 24&nbsp;GB+ NVIDIA GPU (verified on A100 / H100),
       CUDA 12.4 recommended.
+    </p>
+  </div>
+</section>
+
+<section id="try">
+  <div class="wrap">
+    <h2>Try them</h2>
+    <p class="sub">
+      The weights are open, but hosting them is not. These are the paths that cost
+      nothing, checked against their live endpoints.
+    </p>
+    <div class="grid" id="tryGrid"></div>
+    <div class="tblwrap" style="margin-top:20px">
+      <table>
+        <thead><tr><th>Model</th><th>Weights</th><th>Size</th><th>Runs here?</th><th>Free hosted path</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>zai-org/GLM-5.3</td><td>open (custom)</td><td>755.7 GB</td>
+            <td style="text-align:right;color:#e07a7a">no</td>
+            <td style="text-align:right">z.ai web chat</td>
+          </tr>
+          <tr>
+            <td>microsoft/TRELLIS.2-4B</td><td>MIT</td><td>16.2 GB</td>
+            <td style="text-align:right;color:#e07a7a">no</td>
+            <td style="text-align:right">official HF Space</td>
+          </tr>
+          <tr>
+            <td>microsoft/TRELLIS-text-xlarge</td><td>MIT</td><td>4.1 GB</td>
+            <td style="text-align:right;color:var(--amber)">CPU only</td>
+            <td style="text-align:right">HF Spaces</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend">
+      “Runs here?” means a sandbox with no NVIDIA GPU, 1&nbsp;GB RAM and 20&nbsp;GB of disk.
+      TRELLIS.2 needs 24&nbsp;GB of GPU memory by its own card; GLM-5.3 is 37× the disk.
+      Nothing is unlimited — the free tiers below are rate-limited, not unmetered.
     </p>
   </div>
 </section>
@@ -378,6 +417,65 @@
     return out.join("\n");
   }
 
+  /* ---------- free access paths, verified against live endpoints ---------- */
+  var TRY = [
+    {
+      repo: "microsoft/TRELLIS.2-4B",
+      title: "Image to 3D, free",
+      accent: "#37d0a0",
+      cost: "free",
+      lines: [
+        "Microsoft's own Gradio Space runs the 4B model on their GPU — upload a picture, get a textured mesh.",
+        "2,042 likes. Queue-based, so it is free but not instant."
+      ],
+      cta: "Open the Space",
+      href: "https://huggingface.co/spaces/microsoft/TRELLIS.2"
+    },
+    {
+      repo: "zai-org/GLM-5.3",
+      title: "GLM-5.3-Flash chat",
+      accent: "#5b8cff",
+      cost: "free, rate-capped",
+      lines: [
+        "Z.ai's own front end, currently headed \"powered by GLM-5.3-Flash\". No API, no key.",
+        "The full 753B GLM-5.3 weights stay download-only — nobody hosts those for free."
+      ],
+      cta: "Open z.ai",
+      href: "https://z.ai"
+    },
+    {
+      repo: "z-ai/glm-5.2:free",
+      title: "GLM by API, $0/token",
+      accent: "#f0a44a",
+      cost: "free, 50 req/day",
+      lines: [
+        "OpenRouter's free GLM. 230,400 max completion tokens, served by Decart.",
+        "Genuinely $0 per token, but 20 req/min and 50 req/day on an unfunded account."
+      ],
+      cta: "Model on OpenRouter",
+      href: "https://openrouter.ai/z-ai/glm-5.2:free"
+    }
+  ];
+
+  function renderTry(){
+    var g = document.getElementById("tryGrid");
+    TRY.forEach(function(t){
+      var el = document.createElement("article");
+      el.className = "card";
+      el.style.setProperty("--accent", t.accent);
+      el.innerHTML =
+        '<div class="role">' + esc(t.cost) + '</div>' +
+        "<h3>" + esc(t.title) + '</h3>' +
+        '<p class="mono" style="font-size:12.5px;color:var(--dim);margin:2px 0 12px">' + esc(t.repo) + '</p>' +
+        t.lines.map(function(l){ return "<p>" + esc(l) + "</p>"; }).join("") +
+        '<a class="btn" href="' + t.href + '" target="_blank" rel="noopener noreferrer">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+          '<path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</svg>' + esc(t.cta) + '</a>';
+      g.appendChild(el);
+    });
+  }
+
   /* ---------- benchmark table ---------- */
   function renderBench(){
     var tb = document.querySelector("#benchTable tbody");
@@ -452,6 +550,7 @@
   var models = data.models || [];
 
   renderGrid(models);
+  renderTry();
   renderBench();
   renderCards(models);
 
