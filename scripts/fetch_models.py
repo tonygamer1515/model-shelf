@@ -26,15 +26,6 @@ RAW_README = "https://huggingface.co/{repo}/raw/main/README.md"
 
 MODELS = [
     {
-        "repo": "zai-org/GLM-5.3",
-        "role": "Agentic coding LLM",
-        "blurb": (
-            "Post-training refresh of the GLM-5.2 base. Open-weights SOTA on "
-            "Terminal Bench 3.0 and Agents' Last Exam."
-        ),
-        "accent": "#5b8cff",
-    },
-    {
         "repo": "microsoft/TRELLIS.2-4B",
         "role": "Image-to-3D generator",
         "blurb": (

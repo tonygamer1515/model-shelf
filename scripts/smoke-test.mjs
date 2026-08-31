@@ -1,12 +1,12 @@
 // Headless smoke test for the page's embedded script.
 // Extracts <script> (non-JSON) + <script id="model-data"> from index.html,
-// runs them against a minimal DOM stub, and asserts on what the page would render.
+// runs them against a minimal DOM stub, asserts on the rendered output, and then
+// actually invokes the event handlers to check the generator behaves.
 import fs from "node:fs";
 import assert from "node:assert/strict";
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
-// --- pull the two script blocks out of the built page ---
 const dataMatch = html.match(/<script id="model-data" type="application\/json">([\s\S]*?)<\/script>/);
 assert.ok(dataMatch, "model-data script block missing");
 
@@ -14,99 +14,141 @@ const scripts = [...html.matchAll(/<script(?![^>]*type="application\/json")[^>]*
 assert.equal(scripts.length, 1, `expected 1 inline JS block, found ${scripts.length}`);
 const js = scripts[0][1];
 
-// --- minimal DOM stub ---
-function el(id) {
+// --- minimal DOM stub -------------------------------------------------------
+const registry = {};
+const handlers = {};   // "id:type" -> listener
+
+function makeEl(id) {
   return {
-    id, _html: "", style: { setProperty() {} }, children: [],
+    id, _html: "", children: [], value: "", disabled: false, files: [],
+    style: { setProperty() {} },
     set className(v) { this._cls = v; }, get className() { return this._cls; },
-    set textContent(v) { this._text = String(v); }, get textContent() { return this._text; },
+    set textContent(v) { this._text = String(v); }, get textContent() { return this._text ?? ""; },
     set innerHTML(v) { this._html = String(v); }, get innerHTML() { return this._html; },
-    insertAdjacentHTML(_pos, frag) { this._html += frag; },
+    insertAdjacentHTML(_p, frag) { this._html += frag; },
     appendChild(child) { this.children.push(child); return child; },
+    addEventListener(type, fn) { handlers[id + ":" + type] = fn; },
     click() { if (typeof this.onclick === "function") this.onclick(); },
     setAttribute(k, v) { (this._attrs ||= {})[k] = v; },
     getAttribute(k) { return (this._attrs || {})[k]; },
   };
 }
 
-const registry = {};
-// The page hands this text straight to JSON.parse, exactly as the browser would.
-// The \/ that build_site.py inserted is a legal JS string escape, so no unescaping here.
 const rawJson = dataMatch[1];
 const document = {
   getElementById(id) {
     if (id === "model-data") return { textContent: rawJson };
-    return (registry[id] ||= el(id));
+    return (registry[id] ||= makeEl(id));
   },
-  querySelector(sel) {
-    assert.equal(sel, "#benchTable tbody", "unexpected selector " + sel);
-    return (registry["benchTableTbody"] ||= el("benchTableTbody"));
-  },
-  createElement(tag) { return { tagName: tag, ...el(tag), style: { setProperty() {} } }; },
+  createElement(tag) { return { tagName: tag, ...makeEl(tag), style: { setProperty() {} } }; },
 };
 
+// browser globals the page touches at load time
 const location = { protocol: "file:" };
+const localStorage = { _s: {}, getItem(k) { return this._s[k] ?? null; }, setItem(k, v) { this._s[k] = String(v); } };
+const urlStub = { createObjectURL: () => "blob:stub" };
 let fetchCalls = 0;
 const fetch = () => { fetchCalls++; return Promise.reject(new Error("offline")); };
+const FormData = function () { this.append = () => {}; };
 
-// --- run the page script ---
-new Function("document", "location", "fetch", js)(document, location, fetch);
+new Function("document", "location", "localStorage", "URL", "fetch", "FormData", js)(
+  document, location, localStorage, urlStub, fetch, FormData);
 
-// --- assertions ---
+// --- model cards ------------------------------------------------------------
 const grid = registry["grid"];
-assert.equal(grid.children.length, 3, `expected 3 model cards, got ${grid.children.length}`);
+assert.equal(grid.children.length, 2, `expected 2 model cards, got ${grid.children.length}`);
 const gridHtml = grid.children.map((c) => c.innerHTML).join("\n");
-for (const repo of ["zai-org/GLM-5.3", "microsoft/TRELLIS.2-4B", "microsoft/TRELLIS-text-xlarge"]) {
+for (const repo of ["microsoft/TRELLIS.2-4B", "microsoft/TRELLIS-text-xlarge"]) {
   assert.ok(gridHtml.includes(repo), `grid missing ${repo}`);
 }
-assert.ok(gridHtml.includes("753B"), "GLM-5.3 parameter count not rendered as 753B");
+assert.ok(gridHtml.includes("image-to-3d"), "TRELLIS.2 task tag missing");
+assert.ok(gridHtml.includes("text-to-3d"), "TRELLIS-text task tag missing");
 assert.ok(gridHtml.includes("1,738,794"), "TRELLIS.2 downloads not formatted");
-assert.ok(gridHtml.includes("image-to-3d"), "pipeline tag missing");
-assert.ok(gridHtml.includes("microsoft/TRELLIS-text-xlarge") && gridHtml.includes("Text-to-3D generator"),
-  "TRELLIS-text-xlarge card incomplete");
-assert.equal((gridHtml.match(/View on the Hub/g) || []).length, 3, "not every card links back to the Hub");
+assert.equal((gridHtml.match(/View on the Hub/g) || []).length, 2, "not every card links back to the Hub");
 
-const rows = (registry["benchTableTbody"].innerHTML.match(/<tr>/g) || []).length;
-assert.equal(rows, 16, `expected 16 benchmark rows, got ${rows}`);
-assert.ok(registry["benchTableTbody"].innerHTML.includes("CyberGym"), "CyberGym row missing");
-assert.ok(registry["benchTableTbody"].innerHTML.includes('class="best"'), "no best-in-row highlight");
-assert.ok(registry["benchTableTbody"].innerHTML.includes('class="hi"'), "no GLM column highlight");
+// --- GLM must be gone -------------------------------------------------------
+const rendered = gridHtml + registry["cardBody"].innerHTML;
+for (const gone of ["GLM-5.3", "zai-org", "CyberGym", "Terminal Bench", "glm-5.2:free", "z.ai"]) {
+  assert.ok(!rendered.includes(gone), `GLM reference still rendered: ${gone}`);
+}
+assert.ok(!html.includes("zai-org"), "GLM still referenced in the built page source");
+assert.ok(!/Terminal Bench/.test(html), "GLM benchmark table still in the built page");
 
-assert.equal(registry["reader"].children.length, 3, "expected 3 model-card tabs");
+assert.equal(registry["reader"].children.length, 2, "expected 2 model-card tabs");
 assert.equal(registry["reader"].children[0].getAttribute("aria-selected"), "true", "first tab not selected");
 
-const tryGrid = registry["tryGrid"];
-assert.equal(tryGrid.children.length, 3, `expected 3 free-access cards, got ${tryGrid.children.length}`);
-const tryHtml = tryGrid.children.map((c) => c.innerHTML).join("\n");
-for (const href of [
-  "https://huggingface.co/spaces/microsoft/TRELLIS.2",
-  "https://z.ai",
-  "https://openrouter.ai/z-ai/glm-5.2:free",
-]) {
-  assert.ok(tryHtml.includes(href), `free-access card missing ${href}`);
-}
-assert.ok(tryHtml.includes("50 req/day"), "free tier limits not disclosed on the card");
-assert.ok(tryHtml.includes("GLM-5.3-Flash"), "z.ai entry does not name the model actually served");
-// every rendered card must carry a real anchor, not just bare text
-for (const href of [
-  "https://huggingface.co/spaces/microsoft/TRELLIS.2",
-  "https://z.ai",
-  "https://openrouter.ai/z-ai/glm-5.2:free",
-]) {
-  assert.ok(tryHtml.includes('href="' + href + '"'), `no anchor rendered for ${href}`);
-}
 const card = registry["cardBody"].innerHTML;
 assert.ok(card.includes("<table>"), "model card markdown table did not render");
 assert.ok(card.includes("<pre><code"), "model card code fence did not render");
-assert.ok(card.includes("GLM-5.3"), "GLM card content missing");
+assert.ok(card.includes("TRELLIS.2"), "TRELLIS card content missing");
 assert.ok(!card.includes("__MODELS_JSON__"), "unrendered placeholder leaked into the page");
 assert.ok(!/<script/i.test(card), "markdown renderer emitted a raw <script> tag — XSS risk");
 
-assert.match(registry["statusText"].textContent, /all 3 models fetched/, "status line wrong");
-assert.match(registry["genAt"].textContent, /^built 20\d\d-/, "generated-at stamp wrong");
-assert.match(registry["footRev"].textContent, /GLM-5\.3@[0-9a-f]{7}/, "footer revision wrong");
-assert.equal(fetchCalls, 0, "file:// mode should not attempt a live refresh");
+// --- generator: handlers must be bound -------------------------------------
+for (const key of ["drop:click", "drop:drop", "imgInput:change", "token:change", "go:click"]) {
+  assert.equal(typeof handlers[key], "function", `handler ${key} was not registered`);
+}
+for (const id of ["res", "seed"]) {
+  assert.ok(js.includes('getElementById("' + id + '")'), `handler never reads #${id}`);
+}
 
-console.log("PASS  3 cards · 16 benchmark rows · 3 tabs · status:", registry["statusText"].textContent);
+// the client must target the Space's real Gradio prefix, not the old /call/ one
+assert.ok(js.includes("/gradio_api"), "client does not use the /gradio_api prefix");
+assert.ok(js.includes("microsoft-trellis-2.hf.space"), "Space runtime host missing from the client");
+for (const ep of ["start_session", "image_to_3d", "end_session", "/upload"]) {
+  assert.ok(js.includes(ep), `client never calls ${ep}`);
+}
+
+// the quota reality must be stated on the page, not hidden
+assert.ok(html.includes("not unlimited"), "page does not disclose that access is not unlimited");
+assert.ok(html.includes("120 s"), "page does not state the 120 s per-call reservation");
+assert.ok(html.includes("ZeroGPU"), "page does not name ZeroGPU as the limiter");
+assert.ok(/2 minutes/.test(html) && /5 minutes/.test(html) && /40 minutes/.test(html),
+  "page does not list the actual per-tier daily quotas");
+
+// --- exercise the handlers --------------------------------------------------
+const logText = () => registry["log"].children.map((c) => c.textContent).join("\n");
+
+// clicking Generate with no image must warn, and must not touch the network
+let net = fetchCalls;
+await handlers["go:click"]();
+assert.ok(/Pick an image first/.test(logText()), "no-image click did not warn the user");
+assert.equal(fetchCalls, net, "no-image click hit the network");
+
+// token persistence must write through
+registry["token"].value = "hf_test_value";
+handlers["token:change"]();
+assert.equal(localStorage.getItem("trellis-shelf-hf-token"), "hf_test_value",
+  "token was not persisted to localStorage");
+
+// selecting an image must preview it in the drop zone
+registry["imgInput"].files = [{ name: "shot.png", size: 20480, type: "image/png" }];
+handlers["imgInput:change"]();
+assert.ok(registry["drop"].innerHTML.includes("blob:stub"), "selected image was not previewed");
+assert.ok(registry["drop"].innerHTML.includes("shot.png"), "selected filename not shown");
+assert.equal(fetchCalls, net, "choosing a file hit the network");
+
+// a non-image must be rejected
+registry["imgInput"].files = [{ name: "notes.txt", size: 10, type: "text/plain" }];
+handlers["imgInput:change"]();
+assert.ok(/not an image/.test(logText()), "non-image file was not rejected");
+
+// with an image selected, Generate must reach for the upload endpoint and then
+// report the failure honestly rather than silently doing nothing
+registry["imgInput"].files = [{ name: "shot.png", size: 20480, type: "image/png" }];
+handlers["imgInput:change"]();
+registry["log"].innerHTML = ""; registry["log"].children.length = 0;
+await handlers["go:click"]();
+assert.ok(fetchCalls > net, "Generate with an image did not attempt the upload");
+assert.ok(/Failed:|upload failed/.test(logText()), "network failure was not surfaced to the user");
+assert.equal(registry["go"].disabled, false, "Generate button left disabled after a failure");
+
+// --- status line ------------------------------------------------------------
+assert.match(registry["statusText"].textContent, /all 2 models fetched/, "status line wrong");
+assert.match(registry["genAt"].textContent, /^built 20\d\d-/, "generated-at stamp wrong");
+assert.match(registry["footRev"].textContent, /TRELLIS\.2-4B@[0-9a-f]{7}/, "footer revision wrong");
+
+console.log("PASS  2 model cards · 2 tabs · generator wired and exercised");
+console.log("      status:", registry["statusText"].textContent);
 console.log("      footer:", registry["footRev"].textContent);
-console.log("      GLM card render length:", card.length, "chars");
+console.log("      GLM removed:", !rendered.includes("GLM"), "· card render:", card.length, "chars");
