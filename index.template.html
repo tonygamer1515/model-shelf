@@ -3,135 +3,112 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TRELLIS Shelf — free image-to-3D</title>
-<meta name="description" content="Two open-weights 3D generators from the Hugging Face Hub, plus a generator wired straight to Microsoft's TRELLIS.2 Space API.">
+<title>AI Sandbox — free model APIs, limits printed</title>
+<meta name="description" content="A browser sandbox on model APIs that cost nothing. Every rate limit is published here, because none of them is unlimited.">
 <style>
   :root{
     --bg:#0a0c12; --panel:#11151f; --panel2:#161b28; --line:#232a3b;
     --ink:#e8ecf5; --muted:#94a0b8; --dim:#6b7690;
-    --blue:#5b8cff; --green:#37d0a0; --amber:#f0a44a; --red:#e07a7a;
+    --blue:#5b8cff; --green:#37d0a0; --amber:#f0a44a; --red:#e07a7a; --violet:#a98cff;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
-    line-height:1.6;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
-  a{color:var(--blue);text-decoration:none}
-  a:hover{text-decoration:underline}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 22px}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
   code,pre,.mono{font-family:var(--mono)}
 
-  header{position:sticky;top:0;z-index:50;background:rgba(10,12,18,.86);
-    backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  header{position:sticky;top:0;z-index:50;background:rgba(10,12,18,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
   .nav{display:flex;align-items:center;gap:18px;height:58px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:-.2px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:650}
   .brand svg{width:22px;height:22px}
   .nav nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
-  .nav nav a{color:var(--muted)}
-  .nav nav a:hover{color:var(--ink);text-decoration:none}
+  .nav nav a{color:var(--muted)} .nav nav a:hover{color:var(--ink);text-decoration:none}
 
-  .hero{padding:72px 0 46px;position:relative;overflow:hidden}
+  .hero{padding:64px 0 38px;position:relative;overflow:hidden}
   .hero::before{content:"";position:absolute;inset:-40% -10% auto -10%;height:520px;
-    background:radial-gradient(60% 60% at 30% 40%,rgba(55,208,160,.16),transparent 70%),
-               radial-gradient(50% 50% at 75% 30%,rgba(240,164,74,.12),transparent 70%);
-    pointer-events:none}
-  .hero h1{font-size:clamp(34px,6vw,58px);line-height:1.06;margin:0 0 16px;letter-spacing:-1.4px;font-weight:700}
-  .hero p.lede{font-size:18px;color:var(--muted);max-width:62ch;margin:0 0 26px}
+    background:radial-gradient(60% 60% at 28% 40%,rgba(169,140,255,.16),transparent 70%),
+               radial-gradient(50% 50% at 76% 30%,rgba(55,208,160,.14),transparent 70%);pointer-events:none}
+  .hero h1{font-size:clamp(32px,5.6vw,54px);line-height:1.07;margin:0 0 16px;letter-spacing:-1.4px;font-weight:700}
+  .hero p.lede{font-size:18px;color:var(--muted);max-width:64ch;margin:0 0 24px}
   .pillrow{display:flex;flex-wrap:wrap;gap:8px}
   .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);
     border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 11px}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 9px var(--green)}
   .dot.off{background:var(--dim);box-shadow:none}
 
-  section{padding:52px 0;border-top:1px solid var(--line)}
+  section{padding:48px 0;border-top:1px solid var(--line)}
   h2{font-size:26px;letter-spacing:-.6px;margin:0 0 6px}
-  .sub{color:var(--dim);font-size:14.5px;margin:0 0 28px;max-width:70ch}
-  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;
-    position:relative;overflow:hidden;transition:border-color .18s,transform .18s}
-  .card:hover{border-color:#33405c;transform:translateY(-2px)}
-  .card::after{content:"";position:absolute;left:0;top:0;height:3px;width:100%;background:var(--accent)}
-  .card h3{margin:0 0 4px;font-size:19px;font-family:var(--mono);letter-spacing:-.3px}
-  .card .role{font-size:12.5px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
-  .card p{color:var(--muted);font-size:14.5px;margin:12px 0 16px}
-  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
-    border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
-  .stat{background:var(--panel2);padding:10px 12px}
-  .stat b{display:block;font-size:17px;font-family:var(--mono);letter-spacing:-.4px}
-  .stat span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px}
-  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-  .tag{font-size:11px;font-family:var(--mono);color:var(--dim);border:1px solid var(--line);
-    border-radius:5px;padding:2px 6px}
-  .btn{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;
-    border:1px solid var(--line);background:var(--panel2);color:var(--ink);
-    padding:8px 13px;border-radius:9px;cursor:pointer;font-family:var(--sans)}
-  .btn:hover{border-color:var(--accent);text-decoration:none}
-  .btn[disabled]{opacity:.45;cursor:not-allowed}
-  .btn.primary{background:#16324a;border-color:#2b5c7e}
+  .sub{color:var(--dim);font-size:14.5px;margin:0 0 26px;max-width:74ch}
 
-  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
-  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
-  th,td{padding:9px 13px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-  th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);font-family:var(--mono)}
-  thead th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;
-    text-transform:uppercase;letter-spacing:.6px}
-  tbody tr:last-child td{border-bottom:none}
-  .legend{font-size:12.5px;color:var(--dim);margin-top:10px;max-width:74ch}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .tabs button{font:600 13.5px var(--sans);color:var(--muted);background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:9px 15px;cursor:pointer}
+  .tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--violet);background:var(--panel2)}
+  .tabpane{display:none} .tabpane.on{display:block}
 
-  /* ---------- generator ---------- */
-  .gen{display:grid;gap:18px;grid-template-columns:minmax(0,320px) minmax(0,1fr)}
-  @media(max-width:860px){.gen{grid-template-columns:1fr}}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:11.5px;color:var(--dim);text-transform:uppercase;
     letter-spacing:.7px;margin-bottom:6px;font-weight:600}
-  .field input[type=text],.field input[type=password],.field select{
-    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
-    border-radius:8px;padding:9px 11px;font:13.5px var(--mono)}
+  .field input,.field select,.field textarea{width:100%;background:var(--panel2);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;padding:9px 11px;font:13.5px var(--mono)}
+  .field textarea{font-family:var(--sans);resize:vertical;min-height:64px}
   .field .hint{font-size:11.5px;color:var(--dim);margin-top:5px}
-  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:22px 14px;text-align:center;
-    color:var(--dim);font-size:13.5px;cursor:pointer;transition:border-color .15s,color .15s}
-  .drop:hover,.drop.over{border-color:var(--green);color:var(--ink)}
-  .drop img{max-width:100%;max-height:190px;border-radius:8px;display:block;margin:0 auto 8px}
-  .log{font:12px/1.65 var(--mono);background:#0d1119;border:1px solid var(--line);
-    border-radius:10px;padding:12px 14px;min-height:120px;max-height:230px;overflow-y:auto;
-    white-space:pre-wrap;word-break:break-word;color:#9fb0c9}
+  .row2{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+  @media(max-width:700px){.row2{grid-template-columns:1fr}}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font:600 13.5px var(--sans);
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:9px 15px;
+    border-radius:9px;cursor:pointer}
+  .btn:hover{border-color:var(--violet);text-decoration:none}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .btn.primary{background:#241f3d;border-color:#4b3f7a}
+  .btn.ghost{background:transparent}
+
+  .thread{background:#0d1119;border:1px solid var(--line);border-radius:10px;padding:14px;
+    min-height:220px;max-height:420px;overflow-y:auto;margin-bottom:14px}
+  .msg{margin-bottom:12px;padding:10px 13px;border-radius:10px;font-size:14.5px;white-space:pre-wrap;word-break:break-word}
+  .msg.user{background:#1b2436;margin-left:14%}
+  .msg.bot{background:#141a26;border:1px solid var(--line);margin-right:8%}
+  .msg.err{background:#2a1618;border:1px solid #5c2b2e;color:#f0b4b4}
+  .msg .who{display:block;font:600 11px var(--mono);color:var(--dim);text-transform:uppercase;
+    letter-spacing:.7px;margin-bottom:5px}
+  .msg details{margin-top:8px;font-size:12.5px;color:var(--dim)}
+  .msg details summary{cursor:pointer;color:var(--violet)}
+
+  .out{display:grid;place-items:center;min-height:280px;background:#0d1119;border:1px solid var(--line);
+    border-radius:10px;overflow:hidden}
+  .out img{max-width:100%;display:block}
+  .log{font:12px/1.65 var(--mono);background:#0d1119;border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;min-height:60px;max-height:180px;overflow-y:auto;white-space:pre-wrap;
+    word-break:break-word;color:#9fb0c9;margin-top:12px}
   .log .ok{color:var(--green)} .log .err{color:var(--red)} .log .warn{color:var(--amber)}
-  .preview{display:grid;place-items:center;min-height:260px;background:#0d1119;
-    border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .preview img{max-width:100%;max-height:420px}
-  .quota{border-left:3px solid var(--amber);background:var(--panel2);border-radius:0 8px 8px 0;
-    padding:12px 15px;font-size:13.5px;color:var(--muted);margin-bottom:20px}
-  .quota b{color:var(--ink)}
 
-  .reader{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
-  .reader button{font:600 13px var(--mono);color:var(--muted);background:var(--panel);
-    border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer}
-  .reader button[aria-selected="true"]{color:var(--ink);border-color:var(--green);background:var(--panel2)}
-  .md{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;font-size:15px}
-  .md h1{font-size:26px;margin:0 0 12px;letter-spacing:-.6px}
-  .md h2{font-size:20px;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-  .md h3{font-size:16.5px;margin:24px 0 8px}
-  .md p{margin:10px 0}
-  .md ul,.md ol{padding-left:22px;margin:10px 0}
-  .md li{margin:5px 0;color:#cdd5e4}
-  .md code{background:#0d1119;border:1px solid var(--line);border-radius:5px;padding:1.5px 5px;font-size:12.5px;color:#a8d8ff}
-  .md pre{background:#0d1119;border:1px solid var(--line);border-radius:10px;padding:15px;overflow-x:auto;margin:14px 0}
-  .md pre code{background:none;border:none;padding:0;color:#c9d6ee;font-size:12.5px;line-height:1.55}
-  .md table{min-width:0}
-  .md a{word-break:break-all}
-  .md blockquote{margin:12px 0;padding:2px 0 2px 14px;border-left:3px solid var(--line);color:var(--muted)}
-  .md img{max-width:100%;border-radius:10px}
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+  th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.6px}
+  tbody tr:last-child td{border-bottom:none}
+  .yes{color:var(--green);font-weight:600} .no{color:var(--red);font-weight:600}
+  .mid{color:var(--amber);font-weight:600}
+  .legend{font-size:12.5px;color:var(--dim);margin-top:10px;max-width:78ch}
 
-  .snip{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .snip .bar{display:flex;align-items:center;gap:9px;padding:10px 15px;border-bottom:1px solid var(--line);
+  .callout{border-left:3px solid var(--red);background:var(--panel2);border-radius:0 8px 8px 0;
+    padding:14px 16px;font-size:14px;color:var(--muted);margin-bottom:20px}
+  .callout b{color:var(--ink)}
+
+  .snip{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:18px}
+  .snip .bar{display:flex;gap:9px;align-items:center;padding:10px 15px;border-bottom:1px solid var(--line);
     background:var(--panel2);font:600 12.5px var(--mono);color:var(--muted)}
-  .snip pre{margin:0;padding:18px;overflow-x:auto;font-size:12.8px;line-height:1.6;color:#c9d6ee}
+  .snip pre{margin:0;padding:18px;overflow-x:auto;font-size:12.6px;line-height:1.6;color:#c9d6ee}
 
-  footer{border-top:1px solid var(--line);padding:34px 0 60px;color:var(--dim);font-size:13.5px}
+  footer{border-top:1px solid var(--line);padding:32px 0 58px;color:var(--dim);font-size:13.5px}
   footer .row{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
-  @media(max-width:640px){.nav nav{display:none}.stats{grid-template-columns:1fr}}
+  @media(max-width:640px){.nav nav{display:none}}
 </style>
 </head>
 <body>
@@ -140,510 +117,558 @@
   <div class="wrap nav">
     <span class="brand">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke="#37d0a0" stroke-width="1.6" stroke-linejoin="round"/>
-        <path d="M3 7.5 12 12l9-4.5M12 12v9" stroke="#f0a44a" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M4 5h16v11H4z" stroke="#a98cff" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="m8 9 2.5 2.5L8 14M13 14h3" stroke="#37d0a0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 20h6" stroke="#a98cff" stroke-width="1.6" stroke-linecap="round"/>
       </svg>
-      TRELLIS Shelf
+      AI Sandbox
     </span>
     <nav>
-      <a href="#models">Models</a>
-      <a href="#generate">Generate</a>
-      <a href="#api">API</a>
-      <a href="#cards">Model cards</a>
-      <a href="#about">About</a>
+      <a href="#sandbox">Sandbox</a>
+      <a href="#limits">Limits</a>
+      <a href="#why">Why no unlimited</a>
+      <a href="#docs">Docs</a>
     </nav>
   </div>
 </header>
 
 <div class="hero">
   <div class="wrap">
-    <h1>Two 3D generators,<br>and a button that runs one.</h1>
+    <h1>Free model APIs.<br>Every limit printed, none hidden.</h1>
     <p class="lede">
-      Microsoft's TRELLIS checkpoints, pulled live from the Hugging Face Hub — plus a
-      generator wired straight to the public TRELLIS.2 Space API. Upload a picture,
-      get a textured mesh. No account on this site, no key, no backend.
+      A browser sandbox wired to APIs that charge no money — no key, no signup, no
+      backend. And an honest answer to the question every page like this dodges:
+      <b>there is no unlimited free model API.</b> Every candidate was tested; each one has
+      a ceiling, and each ceiling is listed below.
     </p>
     <div class="pillrow">
-      <span class="pill"><span class="dot" id="statusDot"></span><span id="statusText">loading…</span></span>
-      <span class="pill mono" id="genAt"></span>
-      <span class="pill">public API · read-only · no key required</span>
+      <span class="pill"><span class="dot" id="statusDot"></span><span id="statusText">checking providers…</span></span>
+      <span class="pill mono" id="counts"></span>
+      <span class="pill">no backend · nothing stored server-side</span>
     </div>
   </div>
 </div>
 
-<section id="models">
+<section id="sandbox">
   <div class="wrap">
-    <h2>The models</h2>
-    <p class="sub">Downloads, likes and parameter counts come from the Hub API at build time.</p>
-    <div class="grid" id="grid"></div>
-  </div>
-</section>
-
-<section id="generate">
-  <div class="wrap">
-    <h2>Generate a 3D asset</h2>
+    <h2>Sandbox</h2>
     <p class="sub">
-      Calls <span class="mono">microsoft-trellis-2.hf.space</span> directly from your
-      browser. Microsoft's GPU does the work, this page is only a client — so nothing
-      here has to be hosted or paid for.
+      Everything runs client-side; your browser calls the providers directly. Pollinations
+      needs no account at all. Puter needs a free sign-in from the visitor but no key from
+      this site.
     </p>
 
-    <div class="quota">
-      <b>It is not unlimited, and no client can make it unlimited.</b> The Space runs on
-      Hugging Face's ZeroGPU, which reserves <b>120 s of quota per call</b> and caps each
-      visitor per day: <b>2 minutes</b> for guests, <b>5 minutes</b> for a free HF account,
-      <b>40 minutes</b> for PRO. That is roughly <b>one asset per day</b> as a guest.
-      The quota is charged to <i>you</i>, not to this site — which is exactly why it works
-      here at all. Paste a Hugging Face token below to use your own larger allowance.
+    <div class="tabs" id="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-pane="chat">Chat &amp; code</button>
+      <button role="tab" aria-selected="false" data-pane="image">Image</button>
     </div>
 
-    <div class="gen">
+    <!-- ---------- chat ---------- -->
+    <div class="tabpane on" id="pane-chat">
       <div class="panel">
-        <div class="field">
-          <label for="imgInput">Image prompt</label>
-          <div class="drop" id="drop">
-            <span id="dropLabel">Click or drop an image here</span>
+        <div class="row2">
+          <div class="field">
+            <label for="provider">Provider</label>
+            <select id="provider">
+              <option value="poll" id="provPoll">Pollinations — no account</option>
+              <option value="puter" id="provPuter">Puter — free sign-in, 500+ models</option>
+            </select>
+            <div class="hint" id="providerHint"></div>
           </div>
-          <input type="file" id="imgInput" accept="image/*" hidden>
-        </div>
-        <div class="field">
-          <label for="res">Resolution</label>
-          <select id="res">
-            <option value="512" selected>512 — fastest, cheapest quota</option>
-            <option value="1024">1024 — cascade</option>
-            <option value="1536">1536 — cascade, full fidelity</option>
-          </select>
-          <div class="hint">All three reserve the same 120 s, so 512 is the sane default.</div>
-        </div>
-        <div class="field">
-          <label for="seed">Seed</label>
-          <input type="text" id="seed" value="0" inputmode="numeric">
-        </div>
-        <div class="field">
-          <label for="token">HF token <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
-          <input type="password" id="token" placeholder="hf_…" autocomplete="off">
-          <div class="hint">
-            Stays in this browser only (localStorage). Never sent anywhere except
-            huggingface.co. Leave blank to run as a guest.
+          <div class="field">
+            <label for="model">Model</label>
+            <select id="model"></select>
+            <div class="hint" id="modelHint"></div>
           </div>
         </div>
-        <button class="btn primary" id="go" style="width:100%;justify-content:center">
-          Generate
-        </button>
-      </div>
-
-      <div class="panel">
-        <div class="field" style="margin-bottom:12px">
-          <label>Progress</label>
-          <div class="log" id="log">Idle.</div>
-        </div>
         <div class="field">
-          <label>Result</label>
-          <div class="preview" id="preview">
-            <span style="color:var(--dim);font-size:13.5px">Nothing generated yet.</span>
+          <label for="sys">System prompt</label>
+          <input type="text" id="sys" value="You are a terse, accurate assistant.">
+        </div>
+        <div class="thread" id="thread"></div>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label for="prompt">Message</label>
+            <textarea id="prompt" placeholder="Ask something, or paste code…"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <button class="btn primary" id="send" style="flex:1">Send</button>
+            <button class="btn ghost" id="clear" title="Clear the thread">Clear</button>
           </div>
         </div>
+        <div class="log" id="clog">Idle. Pollinations allows one request every 15 s.</div>
       </div>
     </div>
 
-    <p class="legend">
-      The Space returns a stack of rendered views as inline images, which is what you see
-      above. It does <b>not</b> return a downloadable GLB over the API — the GLB is produced
-      by a follow-up call that reads server-side state the API never sends back. For the
-      file itself, use <a href="https://huggingface.co/spaces/microsoft/TRELLIS.2"
-      target="_blank" rel="noopener noreferrer">the Space's own interface</a>.
-    </p>
+    <!-- ---------- image ---------- -->
+    <div class="tabpane" id="pane-image">
+      <div class="row2">
+        <div class="panel">
+          <div class="field">
+            <label for="iprompt">Prompt</label>
+            <textarea id="iprompt">a red fox in snow, soft light</textarea>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="isize">Size</label>
+              <select id="isize">
+                <option value="512x512">512 × 512</option>
+                <option value="768x768" selected>768 × 768</option>
+                <option value="1024x1024">1024 × 1024</option>
+                <option value="1024x576">1024 × 576 (wide)</option>
+                <option value="576x1024">576 × 1024 (tall)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="iseed">Seed</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="iseed" value="1" inputmode="numeric" style="flex:1">
+                <button class="btn" id="irand" type="button">Random</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn primary" id="gen" style="width:100%">Generate image</button>
+          <div class="log" id="ilog">Idle. No account needed.</div>
+        </div>
+        <div class="panel">
+          <div class="field" style="margin-bottom:12px"><label>Result</label></div>
+          <div class="out" id="iout"><span style="color:var(--dim);font-size:13.5px">Nothing generated yet.</span></div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <a class="btn" id="idownload" href="#" download="sandbox-image.jpg" style="display:none">Download</a>
+            <a class="btn ghost" id="iopen" href="#" target="_blank" rel="noopener noreferrer" style="display:none">Open full size</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section id="api">
+<section id="limits">
   <div class="wrap">
-    <h2>The API underneath</h2>
+    <h2>The real ceilings</h2>
     <p class="sub">
-      Seven named Gradio endpoints on
-      <a href="https://microsoft-trellis-2.hf.space" target="_blank" rel="noopener noreferrer">microsoft-trellis-2.hf.space</a>,
-      no auth required, and CORS already allows this origin.
+      Measured or read from each provider's own documentation. This table is the reason the
+      page does not call itself unlimited.
     </p>
-    <div class="tblwrap" style="margin-bottom:20px">
-      <table>
-        <thead><tr><th>Endpoint</th><th>Parameters</th><th>Returns</th></tr></thead>
-        <tbody>
-          <tr><td>/start_session</td><td style="text-align:right">—</td><td style="text-align:right">—</td></tr>
-          <tr><td>/preprocess_image</td><td style="text-align:right">image</td><td style="text-align:right">image (background removed)</td></tr>
-          <tr><td>/get_seed</td><td style="text-align:right">randomize, seed</td><td style="text-align:right">seed</td></tr>
-          <tr><td>/image_to_3d</td><td style="text-align:right">image + 14 sampling params</td><td style="text-align:right">HTML preview</td></tr>
-          <tr><td>/extract_glb</td><td style="text-align:right">decimation_target, texture_size</td><td style="text-align:right">GLB (state-bound)</td></tr>
-          <tr><td>/end_session</td><td style="text-align:right">—</td><td style="text-align:right">—</td></tr>
-        </tbody>
-      </table>
+    <div class="callout">
+      <b>Nothing here is unlimited.</b> Pollinations caps anonymous use at
+      <b id="anonLimit">one request every 15 s</b> and may watermark free images. Puter needs
+      a free account and meters the visitor. ZeroGPU Spaces reserve 120 s per call against a
+      ~2 min/day guest allowance.
     </div>
-    <div class="snip">
-      <div class="bar">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="m8 6-6 6 6 6M16 6l6 6-6 6" stroke="#6b7690" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        three requests, no library
-      </div>
-<pre><code># 1. upload the image
-curl -X POST https://microsoft-trellis-2.hf.space/gradio_api/upload \
-     -F "files=@photo.png"
-#    -> ["https://.../gradio_api/file=/tmp/gradio/abcd.png"]
-
-# 2. start the job, get an event id
-curl -X POST https://microsoft-trellis-2.hf.space/gradio_api/call/image_to_3d \
-     -H 'Content-Type: application/json' \
-     -d '{"data":[{"path":"&lt;uploaded&gt;","meta":{path:"/tmp/gradio/abcd.png"}},0,"512",
-                  7.5,0.7,12,5.0, 7.5,0.5,12,3.0, 1.0,0.0,12,3.0]}'
-#    -> {"event_id":"0c96fa360af84a11921eef7fae81c6b2"}
-
-# 3. stream the result
-curl -N https://microsoft-trellis-2.hf.space/gradio_api/call/image_to_3d/&lt;event_id&gt;
-
-# Quota errors come back like this, and they are the real ceiling:
-#   You have exceeded your ZeroGPU quota (120s requested vs. 176s left).
-#   Try again in 23:59:44.</code></pre>
-    </div>
-  </div>
-</section>
-
-<section id="speed">
-  <div class="wrap">
-    <h2>What an asset costs</h2>
-    <p class="sub">Single asset on one NVIDIA H100, as published on the TRELLIS.2-4B card.</p>
     <div class="tblwrap">
       <table>
-        <thead><tr><th>Voxel resolution</th><th>Wall-clock</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td>512³</td><td style="text-align:right;color:var(--green);font-weight:700">~3 s</td><td style="text-align:right;color:var(--muted)">fastest tier</td></tr>
-          <tr><td>1024³</td><td style="text-align:right;color:var(--green);font-weight:700">~17 s</td><td style="text-align:right;color:var(--muted)">~9.6K latent tokens</td></tr>
-          <tr><td>1536³</td><td style="text-align:right;color:var(--amber);font-weight:700">~60 s</td><td style="text-align:right;color:var(--muted)">full fidelity</td></tr>
+        <thead><tr><th>Provider</th><th>Cost</th><th>Account</th><th>Actual ceiling</th></tr></thead>
+        <tbody id="limitsBody">
+          <tr>
+            <td>Pollinations image</td><td class="yes">$0</td><td class="yes">none</td>
+            <td><b>One request every 15 s</b> on the anonymous tier, basic models only, free images may be watermarked. The paid <span class="mono">Flower</span> tier gets 1 req / 3 s.</td>
+          </tr>
+          <tr>
+            <td>Pollinations text</td><td class="yes">$0</td><td class="yes">none</td>
+            <td>Same 1 req / 15 s anonymous ceiling. One basic model.</td>
+          </tr>
+          <tr>
+            <td>Puter.js</td><td class="yes">$0 for this site</td><td class="mid">visitor signs in</td>
+            <td>500+ models with no key on the site, but the visitor needs a free account and Puter meters their usage.</td>
+          </tr>
+          <tr>
+            <td>HF ZeroGPU Spaces</td><td class="yes">$0</td><td class="yes">none</td>
+            <td>Reserves <b>120 s per call</b>; guests get ~2 min/day — about one 3D asset a day.</td>
+          </tr>
+          <tr>
+            <td>OpenRouter <span class="mono">:free</span></td><td class="yes">$0 / token</td><td class="mid">free key</td>
+            <td>Excluded here by choice. For the record: <b>20 req/min</b>, <b>50 req/day</b>.</td>
+          </tr>
+          <tr>
+            <td>DeepInfra</td><td class="no">paid</td><td class="no">key required</td>
+            <td>Lists 190 models without auth, but inference returns <span class="mono">401 missing API key</span>. Not usable free.</td>
+          </tr>
+          <tr>
+            <td>Groq / Cerebras / Together / Gemini</td><td class="no">paid or capped</td><td class="no">key required</td>
+            <td>All returned 401/403 without credentials. Free tiers exist but are small and metered.</td>
+          </tr>
         </tbody>
       </table>
     </div>
     <p class="legend">
-      Compute is the cheap part — 3 to 60 seconds. The quota reservation is 120 s flat, so
-      on ZeroGPU the wall-clock barely matters. The sparse 3D VAE downsamples 16× spatially,
-      so a 1024³ asset compresses to roughly 9,600 latent tokens. Self-hosting needs Linux
-      and a 24&nbsp;GB+ NVIDIA GPU (verified on A100 / H100), CUDA 12.4 recommended.
+      A quota error, verbatim, from a ZeroGPU Space — this is what “unlimited” looks like
+      when it isn't:
+      <span class="mono">You have exceeded your ZeroGPU quota (120s requested vs. 176s left).</span>
     </p>
+
+    <h2 style="margin-top:38px">What this sandbox cannot do</h2>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Modality</th><th>Free API found?</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Text / chat / code</td><td class="yes">yes</td><td>Pollinations keyless; Puter for the long tail of models.</td></tr>
+          <tr><td>Image generation</td><td class="yes">yes</td><td>Pollinations <span class="mono">sana</span>, 1 req / 15 s.</td></tr>
+          <tr><td>Speech / audio</td><td class="no">no</td><td>The obvious endpoint returned HTTP 404. Not wired up.</td></tr>
+          <tr><td>Video generation</td><td class="no">no</td><td>No keyless video API found. Not faked here.</td></tr>
+          <tr><td>3D generation</td><td class="mid">partial</td><td>Microsoft's TRELLIS.2 Space is keyless, but ~1 asset/day.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
-<section id="cards">
+<section id="why">
   <div class="wrap">
-    <h2>Model cards</h2>
-    <p class="sub">The upstream READMEs, rendered verbatim from the Hub.</p>
-    <div class="reader" id="reader" role="tablist"></div>
-    <div class="md" id="cardBody"></div>
-  </div>
-</section>
-
-<section id="about">
-  <div class="wrap">
-    <h2>About</h2>
+    <h2>Why there is no unlimited free model API</h2>
     <p class="sub">
-      Both checkpoints are MIT. Nothing is mirrored or redistributed here — every figure
-      links back to its model card on the Hub, and every generation runs on Microsoft's
-      hardware through their own public Space. This page has no backend and stores nothing
-      except an optional Hugging Face token in your browser's localStorage.
+      Inference costs money every time it runs — GPU-seconds, electricity, bandwidth. A
+      provider can absorb that for a while to attract users, but nobody can offer it without
+      a ceiling. So the honest choices are three:
     </p>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Option</th><th>Free?</th><th>Unlimited?</th><th>Catch</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Free hosted API</td><td class="yes">yes</td><td class="no">no</td>
+            <td>Always rate-limited. This page uses these.</td>
+          </tr>
+          <tr>
+            <td>Self-host open weights</td><td class="mid">$0 licence</td><td class="yes">yes</td>
+            <td>You buy the hardware. The only truly unmetered route.</td>
+          </tr>
+          <tr>
+            <td>Paid API</td><td class="no">no</td><td class="mid">practically</td>
+            <td>Metered by spend rather than by a daily cap.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="docs">
+  <div class="wrap">
+    <h2>Call it yourself</h2>
+    <p class="sub">No library, no account for Pollinations.</p>
+    <div class="snip">
+      <div class="bar">image — keyless, 1 request per 15 s</div>
+<pre><code>curl -o fox.jpg "https://image.pollinations.ai/prompt/a%20red%20fox%20in%20snow?width=1024&amp;height=1024&amp;seed=7&amp;nologo=true"
+# HTTP 200, image/jpeg. access-control-allow-origin: *
+# Go faster than one request per 15 s and the anonymous tier will refuse you.</code></pre>
+    </div>
+    <div class="snip">
+      <div class="bar">chat — keyless, OpenAI-compatible</div>
+<pre><code>curl -X POST https://text.pollinations.ai/openai \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"Say OK"}],"seed":1}'
+# {"choices":[{"message":{"role":"assistant","content":"OK","reasoning":"…"}}]}</code></pre>
+    </div>
+    <div class="snip">
+      <div class="bar">Puter — 500+ models, no key for the site</div>
+<pre><code>&lt;script src="https://js.puter.com/v2/"&gt;&lt;/script&gt;
+&lt;script&gt;
+  // The visitor signs in to a free Puter account; Puter meters their usage.
+  const reply = await puter.ai.chat("Explain SSE in one sentence.");
+  const img   = await puter.ai.txt2img("a red fox in snow");
+&lt;/script&gt;</code></pre>
+    </div>
+    <div class="snip">
+      <div class="bar">3D — keyless but ~1 asset/day (TRELLIS.2 Space)</div>
+<pre><code>RT=https://microsoft-trellis-2.hf.space
+curl -X POST $RT/gradio_api/upload -F "files=@photo.png"
+curl -X POST $RT/gradio_api/call/image_to_3d -H 'Content-Type: application/json' \
+  -d '{"data":[{"path":"&lt;uploaded&gt;","meta":{"_type":"gradio.FileData"}},0,"512",
+              7.5,0.7,12,5.0, 7.5,0.5,12,3.0, 1.0,0.0,12,3.0]}'
+#   -> {"event_id":"219ccad8d2d64c49a03b23147b34a162"}
+curl -N $RT/gradio_api/call/image_to_3d/&lt;event_id&gt;
+#   -> event: error / data: null   once your 120 s daily reservation is gone</code></pre>
+    </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap row">
-    <span>TRELLIS © Microsoft. Data fetched from the Hugging Face Hub.</span>
-    <span class="mono" id="footRev"></span>
+    <span>No backend. No tracking. Providers’ own terms and limits apply.</span>
+    <span class="mono" id="footStamp"></span>
   </div>
 </footer>
 
-<script id="model-data" type="application/json">__MODELS_JSON__</script>
+<script id="sandbox-data" type="application/json">__SANDBOX_JSON__</script>
 <script>
 (function(){
   "use strict";
 
-  var SPACE = "https://microsoft-trellis-2.hf.space";
-  var API = SPACE + "/gradio_api";
+  var POLL_TEXT = "https://text.pollinations.ai/openai";
+  var POLL_IMAGE = "https://image.pollinations.ai/prompt/";
+  var ANON_INTERVAL_MS = 15000;   // Pollinations anonymous tier: 1 request / 15 s
+  var lastPoll = 0;
 
-  function fmt(n){ if(n==null) return "—"; return n.toLocaleString("en-US"); }
-  function params(n){
-    if(n==null) return "—";
-    if(n>=1e9) return (n/1e9).toFixed(n>=1e10?0:1).replace(/\.0$/,"")+"B";
-    if(n>=1e6) return (n/1e6).toFixed(0)+"M";
-    return fmt(n);
-  }
+  var sandbox = JSON.parse(document.getElementById("sandbox-data").textContent);
+  var poll = sandbox.pollinations || {};
+  var puterCfg = sandbox.puter || {};
+  var pollTextModels = poll.text_models || [];
+  var pollImgModels = poll.image_models || [];
+
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function anonLimitText(){ return poll.anonymous_limit || "one request every 15 s"; }
 
-  /* ---------- minimal markdown renderer ---------- */
-  function inline(s){
-    s = esc(s);
-    s = s.replace(/`([^`]+)`/g,"<code>$1</code>");
-    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,'<img alt="$1" src="$2" loading="lazy">');
-    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,
-        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    s = s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
-    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<em>$2</em>");
-    return s;
-  }
-  function md(src){
-    var lines = String(src||"").replace(/\r\n/g,"\n").split("\n"), out = [], i = 0;
-    function isRow(l){ return /^\s*\|.*\|\s*$/.test(l); }
-    function isSep(l){ return /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(l) && /-/.test(l); }
-    function cells(l){ return l.trim().replace(/^\||\|$/g,"").split("|").map(function(c){return c.trim();}); }
-    while(i < lines.length){
-      var line = lines[i];
-      if(/^\s*$/.test(line)){ i++; continue; }
-      var m = /^(#{1,6})\s+(.*)$/.exec(line);
-      if(m){ var lv = m[1].length; out.push("<h"+lv+">"+inline(m[2])+"</h"+lv+">"); i++; continue; }
-      if(/^\s*```/.test(line)){
-        var buf = []; i++;
-        while(i < lines.length && !/^\s*```/.test(lines[i])){ buf.push(lines[i]); i++; }
-        i++;
-        out.push("<pre><code>"+esc(buf.join("\n"))+"</code></pre>");
-        continue;
-      }
-      if(isRow(line) && i+1 < lines.length && isSep(lines[i+1])){
-        var head = cells(line); i += 2; var rows = [];
-        while(i < lines.length && isRow(lines[i])){ rows.push(cells(lines[i])); i++; }
-        var t = "<table><thead><tr>";
-        head.forEach(function(h){ t += "<th>"+inline(h)+"</th>"; });
-        t += "</tr></thead><tbody>";
-        rows.forEach(function(r){
-          t += "<tr>";
-          for(var k=0;k<head.length;k++){ t += "<td>"+inline(r[k]||"")+"</td>"; }
-          t += "</tr>";
-        });
-        out.push(t+"</tbody></table>");
-        continue;
-      }
-      if(/^\s*>/.test(line)){
-        var q = [];
-        while(i < lines.length && /^\s*>/.test(lines[i])){ q.push(lines[i].replace(/^\s*>\s?/,"")); i++; }
-        out.push("<blockquote>"+inline(q.join(" "))+"</blockquote>");
-        continue;
-      }
-      var listM = /^(\s*)([-*+]|\d+\.)\s+(.*)$/.exec(line);
-      if(listM){
-        var ordered = /\d/.test(listM[2]), tag = ordered ? "ol" : "ul", items = [];
-        while(i < lines.length){
-          var lm = /^(\s*)([-*+]|\d+\.)\s+(.*)$/.exec(lines[i]);
-          if(!lm) break;
-          items.push("<li>"+inline(lm[3])+"</li>"); i++;
-        }
-        out.push("<"+tag+">"+items.join("")+"</"+tag+">");
-        continue;
-      }
-      var para = [];
-      while(i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6}\s|```|\s*>|\s*([-*+]|\d+\.)\s)/.test(lines[i])
-            && !(isRow(lines[i]) && i+1 < lines.length && isSep(lines[i+1]))){
-        para.push(lines[i]); i++;
-      }
-      if(para.length) out.push("<p>"+inline(para.join(" "))+"</p>");
-      else i++;
-    }
-    return out.join("\n");
-  }
+  /* ---------------- tabs ---------------- */
+  var tabsEl = document.getElementById("tabs");
+  Array.prototype.forEach.call(tabsEl.children, function(btn){
+    btn.addEventListener("click", function(){
+      Array.prototype.forEach.call(tabsEl.children, function(b){ b.setAttribute("aria-selected","false"); });
+      btn.setAttribute("aria-selected","true");
+      ["chat","image"].forEach(function(p){
+        document.getElementById("pane-"+p).className = "tabpane" + (p===btn.dataset.pane ? " on" : "");
+      });
+    });
+  });
 
-  /* ---------- model cards ---------- */
-  function renderCards(models){
-    var tabs = document.getElementById("reader");
-    var body = document.getElementById("cardBody");
-    tabs.innerHTML = "";
-    models.forEach(function(m,idx){
-      var b = document.createElement("button");
-      b.type = "button";
-      b.setAttribute("role","tab");
-      b.setAttribute("aria-selected", idx===0 ? "true" : "false");
-      b.textContent = m.repo;
-      b.onclick = function(){
-        Array.prototype.forEach.call(tabs.children,function(c){ c.setAttribute("aria-selected","false"); });
-        b.setAttribute("aria-selected","true");
-        body.innerHTML = m.readme ? md(m.readme)
-          : "<p>Model card unavailable (HTTP "+m.http_status+"). "+
-            '<a href="'+m.url+'" target="_blank" rel="noopener noreferrer">Open on the Hub</a>.</p>';
+  /* ---------------- Puter SDK, loaded only if chosen ---------------- */
+  var puterPromise = null;
+  function loadPuter(){
+    if(window.puter) return Promise.resolve(window.puter);
+    if(puterPromise) return puterPromise;
+    puterPromise = new Promise(function(resolve, reject){
+      var s = document.createElement("script");
+      s.src = puterCfg.sdk || "https://js.puter.com/v2/";
+      s.onload = function(){
+        if(window.puter) resolve(window.puter);
+        else reject(new Error("Puter SDK loaded but exposed no global."));
       };
-      tabs.appendChild(b);
+      s.onerror = function(){ reject(new Error("Could not load the Puter SDK.")); };
+      document.head.appendChild(s);
     });
-    if(models.length) tabs.children[0].click();
+    return puterPromise;
   }
 
-  /* ---------- model cards grid ---------- */
-  function renderGrid(models){
-    var g = document.getElementById("grid");
-    models.forEach(function(m){
-      var el = document.createElement("article");
-      el.className = "card";
-      el.style.setProperty("--accent", m.accent || "#37d0a0");
-      var tags = (m.tags||[]).slice(0,8).map(function(t){ return '<span class="tag">'+esc(t)+"</span>"; }).join("");
-      el.innerHTML =
-        '<div class="role">'+esc(m.role)+'</div>'+
-        "<h3>"+esc(m.repo)+'</h3>'+
-        "<p>"+esc(m.blurb)+'</p>'+
-        '<div class="stats">'+
-          '<div class="stat"><b>'+params(m.params)+'</b><span>parameters</span></div>'+
-          '<div class="stat"><b>'+fmt(m.downloads)+'</b><span>downloads / mo</span></div>'+
-          '<div class="stat"><b>'+fmt(m.likes)+'</b><span>likes</span></div>'+
-          '<div class="stat"><b>'+esc(m.pipeline_tag||"—")+'</b><span>task</span></div>'+
-        '</div>'+
-        '<div class="tags">'+tags+'</div>'+
-        '<a class="btn" href="'+m.url+'" target="_blank" rel="noopener noreferrer">'+
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">'+
-          '<path d="M7 17 17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
-          '</svg>View on the Hub</a>';
-      g.appendChild(el);
-    });
+  /* ---------------- provider + model pickers ---------------- */
+  var providerSel = document.getElementById("provider");
+  var modelSel = document.getElementById("model");
+  var modelHint = document.getElementById("modelHint");
+  var providerHint = document.getElementById("providerHint");
+
+  function setOption(sel, value, label, hint){
+    var o = document.createElement("option");
+    o.value = value; o.textContent = label;
+    if(hint) o.dataset.hint = hint;
+    sel.appendChild(o);
+    return o;
+  }
+  function clearSelect(sel){
+    while(sel.firstChild) sel.removeChild(sel.firstChild);
   }
 
-  /* ---------- the generator ---------- */
-  var logEl = document.getElementById("log");
-  function log(msg, cls){
+  function fillModels(){
+    clearSelect(modelSel);
+    if(providerSel.value === "poll"){
+      pollTextModels.forEach(function(m){
+        setOption(modelSel, m.name, m.name,
+          (m.description || "Pollinations") + (m.reasoning ? " · reasoning" : "") +
+          (m.tools ? " · tools" : "") + " · " + anonLimitText() + ", no account");
+      });
+    } else {
+      // Puter resolves its catalogue in the browser; offer a shortlist that is known to work.
+      ["gpt-5.6-luna", "gemini-3.1-flash-lite", "claude-sonnet-4-6", "deepseek-chat"].forEach(function(id){
+        setOption(modelSel, id, id, id + " via Puter · free sign-in, Puter meters usage");
+      });
+      setOption(modelSel, "", "Puter default", "Let Puter pick");
+    }
+    updateHint();
+  }
+  function updateHint(){
+    var o = modelSel.options[modelSel.selectedIndex];
+    modelHint.textContent = o ? (o.dataset.hint || "") : "";
+    providerHint.textContent = providerSel.value === "poll"
+      ? "No account, no key. Anonymous ceiling: " + anonLimitText() + "."
+      : "No key for this site. The visitor signs in free and Puter meters their usage.";
+  }
+  providerSel.addEventListener("change", fillModels);
+  modelSel.addEventListener("change", updateHint);
+
+  /* ---------------- chat ---------------- */
+  var thread = document.getElementById("thread");
+  var clog = document.getElementById("clog");
+  var history = [];
+
+  function clogWrite(msg, cls){
     var line = document.createElement("div");
     if(cls) line.className = cls;
     line.textContent = msg;
-    if(logEl.textContent === "Idle.") logEl.innerHTML = "";
-    logEl.appendChild(line);
-    logEl.scrollTop = logEl.scrollHeight;
+    if(clog.textContent.indexOf("Idle.") === 0) clog.innerHTML = "";
+    clog.appendChild(line);
+    clog.scrollTop = clog.scrollHeight;
   }
 
-  function authHeaders(){
-    var t = document.getElementById("token").value.trim();
-    return t ? { "Authorization": "Bearer " + t } : {};
+  function bubble(who, text, reasoning, cls){
+    var d = document.createElement("div");
+    d.className = "msg " + (cls || (who === "you" ? "user" : "bot"));
+    var head = document.createElement("span");
+    head.className = "who";
+    head.textContent = who;
+    d.appendChild(head);
+    d.appendChild(document.createTextNode(text));
+    if(reasoning){
+      var det = document.createElement("details");
+      var sum = document.createElement("summary");
+      sum.textContent = "reasoning";
+      det.appendChild(sum);
+      det.appendChild(document.createTextNode(reasoning));
+      d.appendChild(det);
+    }
+    thread.appendChild(d);
+    thread.scrollTop = thread.scrollHeight;
+    return d;
   }
 
-  async function uploadImage(file){
-    var fd = new FormData();
-    fd.append("files", file, file.name);
-    var r = await fetch(API + "/upload", { method: "POST", body: fd, headers: authHeaders() });
-    if(!r.ok) throw new Error("upload failed: HTTP " + r.status);
-    var paths = await r.json();
-    if(!Array.isArray(paths) || !paths.length) throw new Error("upload returned no path");
-    return paths[0];
-  }
-
-  async function callGradio(endpoint, data){
-    var r = await fetch(API + "/call/" + endpoint, {
+  async function askPollinations(sys, user){
+    var messages = [];
+    if(sys) messages.push({ role: "system", content: sys });
+    messages = messages.concat(history, [{ role: "user", content: user }]);
+    var r = await fetch(POLL_TEXT, {
       method: "POST",
-      headers: Object.assign({ "Content-Type": "application/json" }, authHeaders()),
-      body: JSON.stringify({ data: data })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: messages, seed: Math.floor(Math.random()*1e9) })
     });
     var text = await r.text();
-    if(!r.ok) throw new Error(endpoint + " HTTP " + r.status + ": " + text.slice(0, 200));
-    var id;
-    try { id = JSON.parse(text).event_id; } catch(e){ throw new Error("no event_id: " + text.slice(0,160)); }
-
-    var sr = await fetch(API + "/call/" + endpoint + "/" + id, { headers: authHeaders() });
-    if(!sr.ok) throw new Error("stream HTTP " + sr.status);
-    var raw = await sr.text();
-
-    // Gradio's SSE stream: `event: <name>` / `data: <json array>`
-    var payload = null, lastEvent = null;
-    raw.split(/\r?\n/).forEach(function(line){
-      if(line.indexOf("event:") === 0){ lastEvent = line.slice(6).trim(); return; }
-      if(line.indexOf("data:") !== 0) return;
-      var body = line.slice(5).trim();
-      var parsed;
-      try { parsed = JSON.parse(body); } catch(e){ return; }
-      if(lastEvent === "error"){
-        var msg = Array.isArray(parsed) ? String(parsed[0]) : JSON.stringify(parsed);
-        throw new Error(msg);
+    if(!r.ok){
+      if(r.status === 429 || /too many|rate/i.test(text)){
+        throw new Error("Rate limited. The anonymous tier allows " + anonLimitText() + " — wait and retry.");
       }
-      if(lastEvent === "complete" || lastEvent === "generating") payload = parsed;
-    });
-    if(payload === null) throw new Error("stream ended with no result");
-    return Array.isArray(payload) ? payload[0] : payload;
+      throw new Error("HTTP " + r.status + " " + text.slice(0,180));
+    }
+    var j = JSON.parse(text);
+    var msg = (j.choices && j.choices[0] && j.choices[0].message) || {};
+    return { content: msg.content || "(empty reply)", reasoning: msg.reasoning || null };
   }
 
-  var chosen = null;
-  var drop = document.getElementById("drop");
-  var fileInput = document.getElementById("imgInput");
-
-  function setFile(file){
-    if(!file || !/^image\//.test(file.type)){ log("That is not an image.", "err"); return; }
-    chosen = file;
-    var url = URL.createObjectURL(file);
-    drop.innerHTML = '<img src="' + url + '" alt="selected prompt">' +
-                     '<span id="dropLabel">' + esc(file.name) + '</span>';
-    log("Selected " + file.name + " (" + Math.round(file.size/1024) + " KB).");
+  async function askPuter(sys, user){
+    var puter = await loadPuter();
+    var modelId = modelSel.value || undefined;
+    var messages = [];
+    if(sys) messages.push({ role: "system", content: sys });
+    messages = messages.concat(history, [{ role: "user", content: user }]);
+    var opts = { messages: messages };
+    if(modelId) opts.model = modelId;
+    var res = await puter.ai.chat(opts);
+    var text = (res && (res.message && res.message.content)) || res && res.text || res;
+    if(typeof text !== "string") text = JSON.stringify(text);
+    return { content: text, reasoning: (res && res.message && res.message.reasoning) || null };
   }
-  drop.addEventListener("click", function(){ fileInput.click(); });
-  fileInput.addEventListener("change", function(){ setFile(fileInput.files[0]); });
-  ["dragenter","dragover"].forEach(function(ev){
-    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); });
-  });
-  ["dragleave","drop"].forEach(function(ev){
-    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); });
-  });
-  drop.addEventListener("drop", function(e){ if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
 
-  var TOKEN_KEY = "trellis-shelf-hf-token";
-  var tokenEl = document.getElementById("token");
-  try { tokenEl.value = localStorage.getItem(TOKEN_KEY) || ""; } catch(e){}
-  tokenEl.addEventListener("change", function(){
-    try { localStorage.setItem(TOKEN_KEY, tokenEl.value.trim()); } catch(e){}
-  });
+  var sendBtn = document.getElementById("send");
+  var promptEl = document.getElementById("prompt");
+  sendBtn.addEventListener("click", async function(){
+    var user = promptEl.value.trim();
+    if(!user) return;
+    var sys = document.getElementById("sys").value.trim();
+    var viaPuter = providerSel.value === "puter";
 
-  var go = document.getElementById("go");
-  go.addEventListener("click", async function(){
-    if(!chosen){ log("Pick an image first.", "err"); return; }
-    go.disabled = true;
-    logEl.innerHTML = "";
-    var preview = document.getElementById("preview");
-    preview.innerHTML = '<span style="color:var(--dim);font-size:13.5px">Working…</span>';
-    var res = document.getElementById("res").value;
-    var seed = parseInt(document.getElementById("seed").value, 10);
-    if(isNaN(seed)) seed = 0;
-    var t0 = Date.now();
+    if(!viaPuter){
+      var wait = ANON_INTERVAL_MS - (Date.now() - lastPoll);
+      if(wait > 0){
+        clogWrite("Waiting " + Math.ceil(wait/1000) + "s — anonymous tier is " + anonLimitText() + ".", "warn");
+        await new Promise(function(r){ setTimeout(r, wait); });
+      }
+    }
+
+    sendBtn.disabled = true;
+    bubble("you", user);
+    history.push({ role: "user", content: user });
+    promptEl.value = "";
+    var pending = bubble("…", "thinking", null, "bot");
     try {
-      log("Uploading image…");
-      var path = await uploadImage(chosen);
-      log("Uploaded: " + String(path).split("/").pop(), "ok");
-
-      log("Opening a session…");
-      await callGradio("start_session", []);
-
-      log("Requesting " + res + " generation. This reserves 120 s of ZeroGPU quota.");
-      var html = await callGradio("image_to_3d", [
-        { path: path, meta: { _type: "gradio.FileData" } },
-        seed, res,
-        7.5, 0.7, 12, 5.0,
-        7.5, 0.5, 12, 3.0,
-        1.0, 0.0, 12, 3.0
-      ]);
-      var secs = ((Date.now() - t0) / 1000).toFixed(1);
-      log("Done in " + secs + " s.", "ok");
-      preview.innerHTML = String(html);
-      try { await callGradio("end_session", []); } catch(e){}
+      var out = viaPuter ? await askPuter(sys, user) : await askPollinations(sys, user);
+      lastPoll = Date.now();
+      pending.remove();
+      var chosen = modelSel.options[modelSel.selectedIndex];
+      bubble(chosen && chosen.value ? chosen.value : "model", out.content, out.reasoning, "bot");
+      history.push({ role: "assistant", content: out.content });
+      clogWrite("Reply received.", "ok");
     } catch(err){
-      var msg = String(err && err.message || err);
-      if(/ZeroGPU quota/i.test(msg)){
-        log("Quota exhausted: " + msg, "warn");
-        log("The Space caps guests at ~2 min/day and reserves 120 s per call, so that is " +
-            "roughly one asset a day. Add a Hugging Face token for 5 min (free) or 40 min (PRO).", "warn");
-      } else {
-        log("Failed: " + msg, "err");
-      }
-      preview.innerHTML = '<span style="color:var(--red);font-size:13.5px;padding:20px;text-align:center">' +
-        'Generation failed.<br><span style="color:var(--dim);font-size:12.5px">' + esc(msg.slice(0,220)) + '</span></span>';
+      pending.remove();
+      bubble("error", String(err && err.message || err), null, "err");
+      history.pop();
+      clogWrite(String(err && err.message || err), "err");
     } finally {
-      go.disabled = false;
+      sendBtn.disabled = false;
     }
   });
+  document.getElementById("clear").addEventListener("click", function(){
+    thread.innerHTML = ""; history = [];
+  });
 
-  /* ---------- boot ---------- */
-  var data = JSON.parse(document.getElementById("model-data").textContent);
-  var models = data.models || [];
-  renderGrid(models);
-  renderCards(models);
+  /* ---------------- image ---------------- */
+  var ilog = document.getElementById("ilog");
+  function ilogWrite(msg, cls){
+    var line = document.createElement("div");
+    if(cls) line.className = cls;
+    line.textContent = msg;
+    if(ilog.textContent.indexOf("Idle.") === 0) ilog.innerHTML = "";
+    ilog.appendChild(line);
+    ilog.scrollTop = ilog.scrollHeight;
+  }
+  function imageUrl(){
+    var p = document.getElementById("iprompt").value.trim() || "abstract shapes";
+    var size = document.getElementById("isize").value.split("x");
+    var seed = parseInt(document.getElementById("iseed").value, 10);
+    if(isNaN(seed)) seed = 1;
+    return POLL_IMAGE + encodeURIComponent(p) +
+      "?width=" + size[0] + "&height=" + size[1] +
+      "&seed=" + seed + "&nologo=true" +
+      (pollImgModels.length ? "&model=" + encodeURIComponent(pollImgModels[0]) : "");
+  }
 
-  var allOk = models.length > 0 && models.every(function(m){ return m.ok; });
-  document.getElementById("statusDot").className = "dot" + (allOk ? "" : " off");
-  document.getElementById("statusText").textContent = allOk
-    ? "all " + models.length + " models fetched from the Hub"
-    : "partial fetch — see cards below";
-  document.getElementById("genAt").textContent = "built " + (data.generated_at || "unknown");
-  document.getElementById("footRev").textContent =
-    models.map(function(m){ return m.repo.split("/")[1] + "@" + String(m.revision||"").slice(0,7); }).join("  ·  ");
+  var genBtn = document.getElementById("gen");
+  genBtn.addEventListener("click", function(){
+    var url = imageUrl();
+    var out = document.getElementById("iout");
+    var dl = document.getElementById("idownload");
+    var open = document.getElementById("iopen");
+    genBtn.disabled = true;
+    out.innerHTML = '<span style="color:var(--dim);font-size:13.5px">Generating…</span>';
+    dl.style.display = "none"; open.style.display = "none";
+    ilogWrite("GET " + url.replace(POLL_IMAGE, "image.pollinations.ai/prompt/").slice(0, 110) + "…");
+    var t0 = Date.now();
+    var img = new Image();
+    img.onload = function(){
+      out.innerHTML = "";
+      out.appendChild(img);
+      dl.href = url; open.href = url;
+      dl.style.display = ""; open.style.display = "";
+      ilogWrite("Done in " + ((Date.now()-t0)/1000).toFixed(1) + "s — " +
+                img.naturalWidth + "×" + img.naturalHeight +
+                ". No account used; free images may carry a watermark.", "ok");
+      genBtn.disabled = false;
+    };
+    img.onerror = function(){
+      out.innerHTML = '<span style="color:var(--red);font-size:13.5px;padding:20px">Generation failed.</span>';
+      ilogWrite("Failed. Most likely the 1 req / 15 s anonymous limit — wait and retry.", "err");
+      genBtn.disabled = false;
+    };
+    img.src = url;
+  });
+  document.getElementById("irand").addEventListener("click", function(){
+    document.getElementById("iseed").value = String(Math.floor(Math.random()*1e9));
+  });
+
+  /* ---------------- boot ---------------- */
+  fillModels();
+  document.getElementById("anonLimit").textContent = anonLimitText();
+
+  var pollOk = !!poll.ok;
+  var puterOk = !!puterCfg.ok;
+  document.getElementById("statusDot").className = "dot" + (pollOk && puterOk ? "" : " off");
+  document.getElementById("statusText").textContent = pollOk && puterOk
+    ? "providers reachable at build time"
+    : "a provider failed its check at build time";
+  document.getElementById("counts").textContent =
+    pollTextModels.length + " keyless text model · " + pollImgModels.length +
+    " keyless image model · Puter " + (puterCfg.advertised || "500+ models");
+  document.getElementById("footStamp").textContent = "built " + (sandbox.generated_at || "unknown");
+
+  if(!pollTextModels.length){
+    bubble("notice", "No keyless text model was discovered at build time. " +
+      "Switch the provider to Puter and sign in.", null, "err");
+  }
 })();
 </script>
 </body>

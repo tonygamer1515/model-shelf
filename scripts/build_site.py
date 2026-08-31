@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build site/index.html by embedding data/models.json into index.template.html."""
+"""Build site/index.html by embedding the JSON data files into index.template.html."""
 
 from __future__ import annotations
 
@@ -9,26 +9,33 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "index.template.html"
-DATA = ROOT / "data" / "models.json"
 OUT = ROOT / "index.html"
+
+SOURCES = {
+    "__SANDBOX_JSON__": ROOT / "data" / "sandbox.json",
+}
 
 
 def main() -> int:
-    if not DATA.exists():
-        print("data/models.json missing — run scripts/fetch_models.py first", file=sys.stderr)
-        return 1
-
-    payload = json.loads(DATA.read_text(encoding="utf-8"))
-    # </script> inside embedded JSON would terminate the script block early.
-    embedded = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-
     template = TEMPLATE.read_text(encoding="utf-8")
-    if "__MODELS_JSON__" not in template:
-        print("template has no __MODELS_JSON__ placeholder", file=sys.stderr)
-        return 1
+    notes = []
 
-    OUT.write_text(template.replace("__MODELS_JSON__", embedded), encoding="utf-8")
-    print(f"Built {OUT} ({OUT.stat().st_size:,} bytes) with {len(payload['models'])} models", file=sys.stderr)
+    for placeholder, path in SOURCES.items():
+        if placeholder not in template:
+            print(f"template has no {placeholder} placeholder", file=sys.stderr)
+            return 1
+        if not path.exists():
+            print(f"{path.name} missing — run scripts/fetch_sandbox.py first", file=sys.stderr)
+            return 1
+        data = json.loads(path.read_text(encoding="utf-8"))
+        # `</script>` inside embedded JSON would terminate the script block early.
+        template = template.replace(
+            placeholder, json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+        )
+        notes.append(f"{path.name}={path.stat().st_size:,}B")
+
+    OUT.write_text(template, encoding="utf-8")
+    print(f"Built {OUT} ({OUT.stat().st_size:,} bytes) from {' + '.join(notes)}", file=sys.stderr)
     return 0
 
 

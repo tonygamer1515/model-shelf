@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '0 6 * * 1'   # refresh Hub numbers weekly
+    - cron: '0 6 * * 1'   # re-verify the free APIs weekly
   workflow_dispatch:
 
 permissions:
@@ -26,8 +26,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Fetch live model metadata from the Hugging Face Hub
-        run: python3 scripts/fetch_models.py --out data/models.json
+      - name: Verify the free model APIs and record their limits
+        run: python3 scripts/fetch_sandbox.py --out data/sandbox.json
 
       - name: Build the page
         run: python3 scripts/build_site.py

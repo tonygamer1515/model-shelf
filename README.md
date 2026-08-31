@@ -1,86 +1,69 @@
-# TRELLIS Shelf
+# AI Sandbox
 
-A single static page for Microsoft's two open-weights 3D generators, plus a
-generator widget wired straight to the public TRELLIS.2 Space API.
+A static page that calls model APIs costing nothing, from the browser. No backend, no
+signup, no key stored anywhere.
 
-| Model | Task | Licence |
-| --- | --- | --- |
-| [`microsoft/TRELLIS.2-4B`](https://huggingface.co/microsoft/TRELLIS.2-4B) | Image-to-3D | MIT |
-| [`microsoft/TRELLIS-text-xlarge`](https://huggingface.co/microsoft/TRELLIS-text-xlarge) | Text-to-3D | MIT |
+**Live:** https://tonygamer1515.github.io/model-shelf/
 
-Everything is fetched from the **public** Hub API — no token, no account, nothing gated.
+## The honest headline
 
-## The generator
+**There is no unlimited free model API.** Every candidate was tested and each has a
+ceiling, so the page publishes them instead of implying otherwise:
 
-Upload an image and the page calls `microsoft-trellis-2.hf.space` directly from your
-browser. Microsoft's GPU does the work; this site has no backend and nothing to host.
+| Provider | Cost | Account | Ceiling |
+| --- | --- | --- | --- |
+| Pollinations image | $0 | none | 1 request / 15 s, basic models, free images may be watermarked |
+| Pollinations text | $0 | none | same 1 req / 15 s |
+| Puter.js | $0 for this site | visitor signs in free | 500+ models, Puter meters the visitor |
+| HF ZeroGPU Spaces | $0 | none | 120 s reserved per call, ~2 min/day for guests |
+| OpenRouter `:free` | $0/token | free key | 20 req/min, 50 req/day — excluded here by choice |
+| DeepInfra | paid | key required | 401 without a key; not usable free |
+| Groq / Cerebras / Together / Gemini | paid or capped | key required | 401/403 without credentials |
 
-```
-POST /gradio_api/upload                    -> uploaded file path
-POST /gradio_api/call/start_session        -> event_id
-POST /gradio_api/call/image_to_3d          -> event_id   (15 params)
-GET  /gradio_api/call/image_to_3d/<id>     -> SSE stream with the result
-```
+The three real options are: a free hosted API (always rate-limited), self-hosting open
+weights (unmetered, but you buy the hardware), or a paid API.
 
-CORS on the Space already allows this origin, and `auth_required` is null.
+## What it does
 
-### It is not unlimited, and no client can make it unlimited
-
-The Space runs on Hugging Face **ZeroGPU**, which reserves **120 s of quota per call**
-regardless of resolution, and caps each visitor per day:
-
-| Account | Daily quota | Roughly |
-| --- | --- | --- |
-| Unauthenticated | 2 minutes | ~1 asset |
-| Free account | 5 minutes | ~2 assets |
-| PRO | 40 minutes | ~20 assets |
-
-The quota is charged to the *visitor*, not to the site — which is precisely why hosting
-this costs nothing. The widget accepts an optional HF token (kept in `localStorage`,
-sent only to huggingface.co) so a user can spend their own larger allowance.
-
-A real quota error, verbatim from the API:
-
-```
-You have exceeded your ZeroGPU quota (120s requested vs. 176s left).
-Try again in 23:59:44.
-```
-
-The API returns an HTML preview (a stack of rendered views), **not** a GLB — the GLB
-comes from a follow-up call that reads `gr.State` the API never sends back. For the file,
-use [the Space's own interface](https://huggingface.co/spaces/microsoft/TRELLIS.2).
+- **Chat & code** — Pollinations keyless by default, or Puter for the long tail of models.
+- **Image** — Pollinations `sana`, keyless, with size and seed controls.
+- Client-side throttling that respects the 15 s anonymous ceiling instead of hammering it.
+- Speech, audio and video are **not** offered: no keyless API was found, and nothing is faked.
 
 ## How it works
 
 ```
-scripts/fetch_models.py   GETs /api/models/<repo> + raw README.md for each model
-                          -> data/models.json
-scripts/build_site.py     embeds that JSON into index.template.html -> index.html
-scripts/smoke-test.mjs    runs the page script against a DOM stub and invokes its handlers
+scripts/fetch_sandbox.py   checks each provider live and parses the real limits out of
+                           the upstream docs -> data/sandbox.json
+scripts/build_site.py      embeds that JSON into index.template.html -> index.html
+scripts/smoke-test.mjs     runs the page script against a DOM stub and drives its handlers
 ```
 
-`index.html` and `data/models.json` are **build outputs and are gitignored.** Only
-`index.template.html` and the scripts are committed; CI regenerates the page on every
-deploy. Committing the built file makes the branch and the workflow race over what
-Pages serves, and the stale copy wins.
+`fetch_sandbox.py` reads Pollinations' `APIDOCS.md` for the tier table rather than
+trusting absent `x-ratelimit-*` headers — that mistake produced a false "no rate limit"
+claim once already.
 
-`index.html` is self-contained: inline CSS, embedded SVG, no CDN, no fonts, no external
-JS. It opens correctly from `file://` with the snapshot baked in.
+`index.html` and `data/sandbox.json` are **build outputs and are gitignored.** CI
+regenerates them on every deploy; committing them makes the branch and the workflow race
+over what Pages serves.
+
+`index.html` is self-contained: inline CSS, embedded SVG, no CDN, no fonts. The Puter SDK
+is loaded only if the visitor picks that provider.
 
 ## Local
 
 ```bash
-python3 scripts/fetch_models.py
+python3 scripts/fetch_sandbox.py
 python3 scripts/build_site.py
-node scripts/smoke-test.mjs
-python3 -m http.server 8000     # then open http://localhost:8000
+node scripts/smoke-test.mjs        # ~30 s: it exercises the real 15 s throttle twice
+python3 -m http.server 8000
 ```
 
-## Deploying to GitHub Pages
+## Deploying
 
 Already configured: **Settings → Pages → Source** is *GitHub Actions*. Pushing to `main`
-triggers `.github/workflows/pages.yml`, which fetches fresh Hub data, rebuilds, smoke
-tests, and publishes. There is also a weekly Monday refresh.
+runs `.github/workflows/pages.yml`, which re-verifies the providers, rebuilds, smoke tests
+and publishes. Weekly refresh on Mondays.
 
-> Pushing `.github/workflows/*` requires a token with the `workflow` scope.
+> Pushing `.github/workflows/*` needs a token with the `workflow` scope.
 > `gh auth login --web --scopes workflow` requests it; plain `gh auth login` does not.
