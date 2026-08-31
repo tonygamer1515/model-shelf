@@ -87,6 +87,14 @@ for (const href of [
 }
 assert.ok(tryHtml.includes("50 req/day"), "free tier limits not disclosed on the card");
 assert.ok(tryHtml.includes("GLM-5.3-Flash"), "z.ai entry does not name the model actually served");
+// every rendered card must carry a real anchor, not just bare text
+for (const href of [
+  "https://huggingface.co/spaces/microsoft/TRELLIS.2",
+  "https://z.ai",
+  "https://openrouter.ai/z-ai/glm-5.2:free",
+]) {
+  assert.ok(tryHtml.includes('href="' + href + '"'), `no anchor rendered for ${href}`);
+}
 const card = registry["cardBody"].innerHTML;
 assert.ok(card.includes("<table>"), "model card markdown table did not render");
 assert.ok(card.includes("<pre><code"), "model card code fence did not render");
